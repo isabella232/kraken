@@ -47,18 +47,27 @@ func main() {
 	}
 
 	jiraClient := jira.NewClient(*username, *password, url)
+
 	versions, err := jiraClient.GetVersions(*projectID)
 	if err != nil {
 		log.Fatalf("Cannot get versions%v\n", err)
 	}
-	fmt.Printf("version: %+v\n", versions[*versionName])
 
 	components, err := jiraClient.GetComponents(*projectID)
 	if err != nil {
 		log.Fatalf("Cannot get versions%v\n", err)
 	}
 
-	fmt.Printf("component: %+v\n", components[*componentName])
+	if _, present := versions[*versionName]; present {
+		log.Fatalf("Version %s already exists.\n", *versionName)
+	}
+
+	if _, present := components[*componentName]; !present {
+		log.Fatalf("Component %s does not exist.\n", *componentName)
+	}
+
+	err = jiraClient.CreateVersion(*projectID, *versionName)
+	fmt.Printf("%+v\n", err)
 }
 
 func validate() []error {

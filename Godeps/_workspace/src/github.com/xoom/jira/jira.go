@@ -36,8 +36,8 @@ type (
 
 	Version struct {
 		ID          string `json:"id"`
-		Name        string `json:"name`
-		Description string `json:"description`
+		Name        string `json:"name"`
+		Description string `json:"description"`
 		Project     string `json:"project"`
 		ProjectID   int    `json:"projectId"`
 		Archived    bool   `json:"archived"`
