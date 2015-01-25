@@ -4,7 +4,7 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/xoom/jira",
-			"Rev": "0d847e407d4af650f56ccce64dac2f225ff88b4a"
+			"Rev": "607765aa2aedf76f7f17232db5db98b1612714e5"
 		}
 	]
 }

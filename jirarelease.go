@@ -6,12 +6,13 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"runtime"
 
 	"github.com/xoom/jira"
 )
 
 var (
-	projectID     = flag.Int("project-id", -1, "JIRA project ID.")
+	projectKey    = flag.String("project-key", "", "JIRA project key.  For example, PLAT.")
 	baseURL       = flag.String("jira-base-url", "http://localhost:8080", "JIRA base REST URL.")
 	componentName = flag.String("component-name", "", "JIRA project component name.")
 	username      = flag.String("jira-username", "", "JIRA admin user.")
@@ -42,38 +43,41 @@ func main() {
 	}
 
 	url, err := url.Parse(*baseURL)
-	if err != nil {
-		log.Fatalf("Cannot parse JIRA base URL %s: %v\n", *baseURL, err)
-	}
+	check(err)
 
 	jiraClient := jira.NewClient(*username, *password, url)
 
-	versions, err := jiraClient.GetVersions(*projectID)
-	if err != nil {
-		log.Fatalf("Cannot get versions: %+v\n", err)
-	}
+	project, err := jiraClient.GetProject(*projectKey)
+	check(err)
 
-	components, err := jiraClient.GetComponents(*projectID)
-	if err != nil {
-		log.Fatalf("Cannot get versions%v\n", err)
-	}
+	versions, err := jiraClient.GetVersions(project.ID)
+	check(err)
 
-	if _, present := versions[*versionName]; present {
-		log.Fatalf("Version %s already exists.\n", *versionName)
-	}
+	components, err := jiraClient.GetComponents(project.ID)
+	check(err)
 
 	if _, present := components[*componentName]; !present {
 		log.Fatalf("Component %s does not exist.\n", *componentName)
 	}
 
-	err = jiraClient.CreateVersion(*projectID, *versionName)
-	fmt.Printf("%+v\n", err)
+	if _, present := versions[*versionName]; !present {
+		err = jiraClient.CreateVersion(project.ID, *versionName)
+	}
+}
+
+func check(err error) {
+	trace := make([]byte, 10*1024)
+	_ = runtime.Stack(trace, false)
+	if err != nil {
+		log.Fatalf("Error: %+v\n", err)
+		log.Printf("%s", trace)
+	}
 }
 
 func validate() []error {
 	errors := make([]error, 0)
-	if *projectID == -1 {
-		errors = append(errors, fmt.Errorf("project-id must be provided"))
+	if *projectKey == "" {
+		errors = append(errors, fmt.Errorf("project-key must be provided"))
 	}
 	if *componentName == "" {
 		errors = append(errors, fmt.Errorf("component-name must be provided"))

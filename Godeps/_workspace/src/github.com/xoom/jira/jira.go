@@ -1,3 +1,4 @@
+// JIRA API with Oguz Component Mappings
 package jira
 
 import (
@@ -10,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -17,11 +19,27 @@ import (
 var debug bool
 
 type (
+	// https://docs.atlassian.com/jira/REST/latest/
 	Jira interface {
+		GetProject(projectKey string) (Project, error)
 		GetComponents(projectID int) (map[string]Component, error)
 		GetVersions(projectID int) (map[string]Version, error)
 		CreateVersion(projectID int, versionName string) error
-		MapVersionToComponent(componentID, versionName string) error
+	}
+
+	// http://jiraplugins.denizoguz.com/wp-content/uploads/2014/09/REST-Manual-v0.1.pdf
+	ComponentVersions interface {
+		GetMappings() error
+		GetVersionsForComponent(projectID, componentID int) error
+		UpdateReleaseDate(mappingID int, releaseDate string) error
+		UpdateReleasedFlag(mappingID int, released bool) error
+		CreateMapping(componentName, versionName string) error
+		DeleteMapping(mappingID int) error
+	}
+
+	Project struct {
+		IDAsString string `json:"id"`
+		ID         int
 	}
 
 	DefaultClient struct {
@@ -30,6 +48,7 @@ type (
 		baseURL    *url.URL
 		httpClient *http.Client
 		Jira
+		ComponentVersions
 	}
 
 	Component struct {
@@ -57,6 +76,37 @@ func init() {
 // NewClient returns a new default Jira client.
 func NewClient(username, password string, baseURL *url.URL) Jira {
 	return DefaultClient{username: username, password: password, baseURL: baseURL, httpClient: &http.Client{Timeout: 10 * time.Second}}
+}
+
+// GetProject returns a representation of a Jira project.
+func (client DefaultClient) GetProject(projectKey string) (Project, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/rest/api/2/project/%s", client.baseURL, projectKey), nil)
+	if err != nil {
+		return Project{}, err
+	}
+	if debug {
+		log.Printf("jira.GetComponents URL %s\n", req.URL)
+	}
+	req.Header.Set("Accept", "application/json")
+	req.SetBasicAuth(client.username, client.password)
+
+	responseCode, data, err := client.consumeResponse(req)
+	if err != nil {
+		return Project{}, err
+	}
+	if responseCode != http.StatusOK {
+		return Project{}, fmt.Errorf("Error getting project versions.  Status code: %d.\n", responseCode)
+	}
+
+	var r Project
+	if err := json.Unmarshal(data, &r); err != nil {
+		return Project{}, err
+	}
+
+	if i, err := strconv.Atoi(r.IDAsString); err == nil {
+		r.ID = i
+	}
+	return r, nil
 }
 
 // GetComponents returns a map of Component indexed by component name.
@@ -152,7 +202,62 @@ func (client DefaultClient) CreateVersion(projectID int, versionName string) err
 	return nil
 }
 
-func (client DefaultClient) MapVersionToComponent(componentID, versionName string) error {
+func (client DefaultClient) CreateMapping(componentID, versionName string) error {
+	// POST http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/
+	/*
+		body:
+			   {
+			    "projectId":10000,
+			    "componentId":10003,
+			    "versionId":10001,
+			    "released":false
+			   }
+	*/
+	return nil
+}
+
+func (client DefaultClient) GetMappings() error {
+	// GET http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/mappings
+	return nil
+}
+
+func (client DefaultClient) GetVersionsForComponent(projectID, componentID int) error {
+	// GET http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/applicable_versions?projectId=10000&projectKey=&selectedComponentIds=10000
+	/*
+	   [ { "description" : "Unknown",
+	       "id" : -1,
+	       "isReleased" : false,
+	       "name" : "Unknown"
+	     },
+	     { "id" : 10001,
+	       "isReleased" : true,
+	       "name" : "v2"
+	     },
+	     { "id" : 10000,
+	       "isReleased" : true,
+	       "name" : "v1"
+	     },
+	     { "id" : 10002,
+	       "isReleased" : true,
+	       "name" : "v3"
+	     }
+	   ]
+	*/
+	return nil
+}
+
+func (client DefaultClient) UpdateReleaseDate(mappingID int, releaseDate string) error {
+	// PUT http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/releaseDate/5?releaseDate=16%2FSep%2F14
+	return nil
+}
+
+func (client DefaultClient) UpdateReleasedFlag(mappingID int, released bool) error {
+	// PUT http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/releaseFlag/5?isReleased=true
+	return nil
+}
+
+func (client DefaultClient) DeleteMapping(mappingID int) error {
+	// DELETE http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/5
 	return nil
 }
 
