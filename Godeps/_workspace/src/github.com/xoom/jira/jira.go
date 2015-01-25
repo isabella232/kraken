@@ -127,14 +127,14 @@ func (client DefaultClient) GetVersions(projectID int) (map[string]Version, erro
 
 // CreateVersion creates a new version in Jira for the given project ID and version name.
 func (client DefaultClient) CreateVersion(projectID int, versionName string) error {
-	version := Version{Name: versionName, Description: "Version " + versionName, ProjectID: projectID, Archived: false, Released: true, ReleaseDate: fmt.Sprintf(time.Now().Format("2006-01-02"))}
+	version := Version{Name: versionName, Description: "Version " + versionName, ProjectID: projectID, Archived: false, Released: true, ReleaseDate: time.Now().Format("2006-01-02")}
 	data, err := json.Marshal(&version)
 	if err != nil {
 		return err
 	}
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/rest/api/2/version", client.baseURL), bytes.NewBuffer(data))
 	if debug {
-		log.Printf("jira.GetVersions URL %s\n", req.URL)
+		log.Printf("jira.CreateVersion URL %s\n", req.URL)
 	}
 	if err != nil {
 		return err
