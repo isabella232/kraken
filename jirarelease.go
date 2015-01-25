@@ -50,7 +50,7 @@ func main() {
 
 	versions, err := jiraClient.GetVersions(*projectID)
 	if err != nil {
-		log.Fatalf("Cannot get versions%v\n", err)
+		log.Fatalf("Cannot get versions: %+v\n", err)
 	}
 
 	components, err := jiraClient.GetComponents(*projectID)

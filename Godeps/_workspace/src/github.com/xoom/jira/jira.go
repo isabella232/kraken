@@ -66,12 +66,7 @@ func (client DefaultClient) GetComponents(projectID int) (map[string]Component, 
 		return nil, err
 	}
 	if responseCode != http.StatusOK {
-		var reason string = "unhandled reason"
-		switch {
-		case responseCode == http.StatusBadRequest:
-			reason = "Bad request."
-		}
-		return nil, fmt.Errorf("Error getting project components: %s.  Status code: %d.  Reason: %s\n", string(data), responseCode, reason)
+		return nil, fmt.Errorf("Error getting project versions.  Status code: %d.\n", responseCode)
 	}
 
 	var r []Component
@@ -102,12 +97,7 @@ func (client DefaultClient) GetVersions(projectID int) (map[string]Version, erro
 		return nil, err
 	}
 	if responseCode != http.StatusOK {
-		var reason string = "unhandled reason"
-		switch {
-		case responseCode == http.StatusNotFound:
-			reason = "Not found."
-		}
-		return nil, fmt.Errorf("Error getting project versions: %s.  Status code: %d.  Reason: %s\n", string(data), responseCode, reason)
+		return nil, fmt.Errorf("Error getting project versions.  Status code: %d.\n", responseCode)
 	}
 
 	var r []Version
@@ -143,14 +133,7 @@ func (client DefaultClient) CreateVersion(projectID int, versionName string) err
 		return nil
 	}
 	if responseCode != http.StatusCreated {
-		var reason string = "unhandled reason"
-		switch {
-		case responseCode == http.StatusNotFound:
-			reason = "Not found."
-		case responseCode == http.StatusForbidden:
-			reason = "Forbidden."
-		}
-		return fmt.Errorf("Error creating project version: %s.  Status code: %d.  Reason: %s\n", string(data), responseCode, reason)
+		return fmt.Errorf("Error getting project versions.  Status code: %d.\n", responseCode)
 	}
 	return nil
 }
