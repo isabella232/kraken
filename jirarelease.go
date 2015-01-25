@@ -27,13 +27,13 @@ var (
 
 func init() {
 	flag.Parse()
-}
-
-func main() {
 	log.Printf("Version: %s, CommitID: %s, build time: %s, SDK Info: %s\n", version, commit, buildTime, sdkInfo)
 	if *versionFlag {
 		os.Exit(0)
 	}
+}
+
+func main() {
 	if err := validate(); len(err) != 0 {
 		for _, i := range err {
 			log.Printf("Error: %+v\n", i)

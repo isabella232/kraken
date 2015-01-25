@@ -8,9 +8,13 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"runtime"
+	"strings"
 	"time"
 )
+
+var debug bool
 
 type (
 	Jira interface {
@@ -46,6 +50,10 @@ type (
 	}
 )
 
+func init() {
+	debug = strings.ToLower(os.Getenv("JIRA_DEBUG")) == "true"
+}
+
 // NewClient returns a new default Jira client.
 func NewClient(username, password string, baseURL *url.URL) Jira {
 	return DefaultClient{username: username, password: password, baseURL: baseURL, httpClient: &http.Client{Timeout: 10 * time.Second}}
@@ -57,7 +65,9 @@ func (client DefaultClient) GetComponents(projectID int) (map[string]Component, 
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("jira.GetComponents URL %s\n", req.URL)
+	if debug {
+		log.Printf("jira.GetComponents URL %s\n", req.URL)
+	}
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 
@@ -88,7 +98,9 @@ func (client DefaultClient) GetVersions(projectID int) (map[string]Version, erro
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("jira.GetVersions URL %s\n", req.URL)
+	if debug {
+		log.Printf("jira.GetVersions URL %s\n", req.URL)
+	}
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 
@@ -121,7 +133,9 @@ func (client DefaultClient) CreateVersion(projectID int, versionName string) err
 		return err
 	}
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/rest/api/2/version", client.baseURL), bytes.NewBuffer(data))
-	log.Printf("jira.GetVersions URL %s\n", req.URL)
+	if debug {
+		log.Printf("jira.GetVersions URL %s\n", req.URL)
+	}
 	if err != nil {
 		return err
 	}
