@@ -22,10 +22,18 @@ var debug bool
 type (
 	// https://docs.atlassian.com/jira/REST/latest/
 	Jira interface {
+		Core
+		ComponentVersions
+	}
+
+	Core interface {
 		GetProject(projectKey string) (Project, error)
 		GetComponents(projectID string) (map[string]Component, error)
 		GetVersions(projectID string) (map[string]Version, error)
 		CreateVersion(projectID, versionName string) (Version, error)
+	}
+
+	ComponentVersions interface {
 		GetMappings() error
 		GetVersionsForComponent(projectID, componentID string) error
 		UpdateReleaseDate(mappingID int, releaseDate string) error
