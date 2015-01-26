@@ -67,9 +67,8 @@ func main() {
 		check(err)
 	}
 
-	err = jiraClient.CreateMapping(project.ID, component.ID, version.ID)
-	check(err)
-
+	//_, err = jiraClient.CreateMapping(project.ID, component.ID, version.ID)
+	//check(err)
 }
 
 func check(err error) {

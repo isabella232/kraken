@@ -1,5 +1,4 @@
 // JIRA API with Oguz Component Mappings
-// http://jiraplugins.denizoguz.com/wp-content/uploads/2014/09/REST-Manual-v0.1.pdf
 package jira
 
 import (
@@ -20,12 +19,12 @@ import (
 var debug bool
 
 type (
-	// https://docs.atlassian.com/jira/REST/latest/
 	Jira interface {
 		Core
 		ComponentVersions
 	}
 
+	// https://docs.atlassian.com/jira/REST/latest/
 	Core interface {
 		GetProject(projectKey string) (Project, error)
 		GetComponents(projectID string) (map[string]Component, error)
@@ -33,12 +32,13 @@ type (
 		CreateVersion(projectID, versionName string) (Version, error)
 	}
 
+	// http://jiraplugins.denizoguz.com/wp-content/uploads/2014/09/REST-Manual-v0.1.pdf
 	ComponentVersions interface {
 		GetMappings() error
 		GetVersionsForComponent(projectID, componentID string) error
 		UpdateReleaseDate(mappingID int, releaseDate string) error
 		UpdateReleasedFlag(mappingID int, released bool) error
-		CreateMapping(projectID string, componentID string, versionID string) error
+		CreateMapping(projectID string, componentID string, versionID string) (Mapping, error)
 		DeleteMapping(mappingID int) error
 	}
 
@@ -69,6 +69,13 @@ type (
 		Archived    bool   `json:"archived"`
 		Released    bool   `json:"released"`
 		ReleaseDate string `json:"releaseDate"`
+	}
+
+	Mapping struct {
+		ProjectID   int  `json:"projectId"`
+		ComponentID int  `json:"componentId"`
+		VersionID   int  `json:"versionId"`
+		Released    bool `json:"released"`
 	}
 )
 
@@ -211,18 +218,51 @@ func (client DefaultClient) CreateVersion(projectID, versionName string) (Versio
 	return v, nil
 }
 
-func (client DefaultClient) CreateMapping(projectID, componentID, versionID string) error {
+func (client DefaultClient) CreateMapping(projectID, componentID, versionID string) (Mapping, error) {
 	// POST http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/
-	/*
-		body:
-			   {
-			    "projectId":10000,
-			    "componentId":10003,
-			    "versionId":10001,
-			    "released":false
-			   }
-	*/
-	return nil
+	pId, err := strconv.Atoi(projectID)
+	if err != nil {
+		return Mapping{}, err
+	}
+	cId, err := strconv.Atoi(componentID)
+	if err != nil {
+		return Mapping{}, err
+	}
+	vId, err := strconv.Atoi(versionID)
+	if err != nil {
+		return Mapping{}, err
+	}
+
+	mapping := Mapping{ProjectID: pId, ComponentID: cId, VersionID: vId, Released: false}
+
+	data, err := json.Marshal(&mapping)
+	if err != nil {
+		return Mapping{}, err
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/jira/rest/com.deniz.jira.mapping/latest/", client.baseURL), bytes.NewBuffer(data))
+	if debug {
+		log.Printf("jira.CreateMapping URL %s\n", req.URL)
+	}
+	if err != nil {
+		return Mapping{}, err
+	}
+	req.Header.Set("Content-type", "application/json")
+	req.SetBasicAuth(client.username, client.password)
+
+	responseCode, data, err := client.consumeResponse(req)
+	if err != nil {
+		return Mapping{}, err
+	}
+	if responseCode != http.StatusCreated {
+		return Mapping{}, fmt.Errorf("Error mapping version.  Status code: %d.\n", responseCode)
+	}
+
+	var v Mapping
+	if err := json.Unmarshal(data, &v); err != nil {
+		return Mapping{}, err
+	}
+	return Mapping{}, nil
 }
 
 func (client DefaultClient) GetMappings() error {
