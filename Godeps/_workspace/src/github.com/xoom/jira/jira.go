@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -309,25 +308,13 @@ func (client DefaultClient) DeleteMapping(mappingID int) error {
 
 func (client DefaultClient) consumeResponse(req *http.Request) (rc int, buffer []byte, err error) {
 	response, err := client.httpClient.Do(req)
-
-	defer func() {
-		if response != nil && response.Body != nil {
-			response.Body.Close()
-		}
-		if e := recover(); e != nil {
-			trace := make([]byte, 10*1024)
-			_ = runtime.Stack(trace, false)
-			log.Printf("%s", trace)
-			err = fmt.Errorf("%v", e)
-		}
-	}()
-
 	if err != nil {
-		panic(err)
+		return 0, nil, err
 	}
+	defer response.Body.Close()
 
 	if data, err := ioutil.ReadAll(response.Body); err != nil {
-		panic(err)
+		return 0, nil, err
 	} else {
 		return response.StatusCode, data, nil
 	}
