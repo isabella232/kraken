@@ -120,8 +120,8 @@ func TestGetProject(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error: %s\n", err)
 	}
-	if project.ID != 11300 {
-		t.Fatalf("Want 11300 but got %d\n", project.ID)
+	if project.ID != "11300" {
+		t.Fatalf("Want 11300 but got %s\n", project.ID)
 	}
 }
 

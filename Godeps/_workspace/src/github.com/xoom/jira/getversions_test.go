@@ -8,6 +8,19 @@ import (
 	"testing"
 )
 
+/*
+
+   Version struct {
+           ID          string `json:"id"`
+           Name        string `json:"name"`
+           Description string `json:"description"`
+           Project     string `json:"project"`
+           ProjectID   int `json:"projectId"`
+           Archived    bool   `json:"archived"`
+           Released    bool   `json:"released"`
+           ReleaseDate string `json:"releaseDate"`
+   }
+*/
 func TestGetVersions(t *testing.T) {
 	response := `
 	[ 
@@ -50,7 +63,7 @@ func TestGetVersions(t *testing.T) {
 
 	url, _ := url.Parse(testServer.URL)
 	client := NewClient("u", "p", url)
-	r, err := client.GetVersions(1)
+	r, err := client.GetVersions("1")
 	if err != nil {
 		t.Fatalf("Not expecting an error %v\n", err)
 	}
@@ -78,7 +91,7 @@ func TestGetVersions404(t *testing.T) {
 	defer testServer.Close()
 	url, _ := url.Parse(testServer.URL)
 	client := NewClient("u", "p", url)
-	_, err := client.GetVersions(1)
+	_, err := client.GetVersions("1")
 	if err == nil {
 		t.Fatalf("Expecting an error\n")
 	}

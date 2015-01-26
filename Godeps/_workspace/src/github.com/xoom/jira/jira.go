@@ -1,4 +1,5 @@
 // JIRA API with Oguz Component Mappings
+// http://jiraplugins.denizoguz.com/wp-content/uploads/2014/09/REST-Manual-v0.1.pdf
 package jira
 
 import (
@@ -22,24 +23,19 @@ type (
 	// https://docs.atlassian.com/jira/REST/latest/
 	Jira interface {
 		GetProject(projectKey string) (Project, error)
-		GetComponents(projectID int) (map[string]Component, error)
-		GetVersions(projectID int) (map[string]Version, error)
-		CreateVersion(projectID int, versionName string) error
-	}
-
-	// http://jiraplugins.denizoguz.com/wp-content/uploads/2014/09/REST-Manual-v0.1.pdf
-	ComponentVersions interface {
+		GetComponents(projectID string) (map[string]Component, error)
+		GetVersions(projectID string) (map[string]Version, error)
+		CreateVersion(projectID, versionName string) (Version, error)
 		GetMappings() error
-		GetVersionsForComponent(projectID, componentID int) error
+		GetVersionsForComponent(projectID, componentID string) error
 		UpdateReleaseDate(mappingID int, releaseDate string) error
 		UpdateReleasedFlag(mappingID int, released bool) error
-		CreateMapping(componentName, versionName string) error
+		CreateMapping(projectID string, componentID string, versionID string) error
 		DeleteMapping(mappingID int) error
 	}
 
 	Project struct {
-		IDAsString string `json:"id"`
-		ID         int
+		ID string `json:"id"`
 	}
 
 	DefaultClient struct {
@@ -48,7 +44,6 @@ type (
 		baseURL    *url.URL
 		httpClient *http.Client
 		Jira
-		ComponentVersions
 	}
 
 	Component struct {
@@ -103,15 +98,12 @@ func (client DefaultClient) GetProject(projectKey string) (Project, error) {
 		return Project{}, err
 	}
 
-	if i, err := strconv.Atoi(r.IDAsString); err == nil {
-		r.ID = i
-	}
 	return r, nil
 }
 
 // GetComponents returns a map of Component indexed by component name.
-func (client DefaultClient) GetComponents(projectID int) (map[string]Component, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/rest/api/2/project/%d/components", client.baseURL, projectID), nil)
+func (client DefaultClient) GetComponents(projectID string) (map[string]Component, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/rest/api/2/project/%s/components", client.baseURL, projectID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -143,8 +135,8 @@ func (client DefaultClient) GetComponents(projectID int) (map[string]Component, 
 }
 
 // GetVersions returns a map of Version indexed by version name.
-func (client DefaultClient) GetVersions(projectID int) (map[string]Version, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/rest/api/2/project/%d/versions", client.baseURL, projectID), nil)
+func (client DefaultClient) GetVersions(projectID string) (map[string]Version, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/rest/api/2/project/%s/versions", client.baseURL, projectID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -176,33 +168,42 @@ func (client DefaultClient) GetVersions(projectID int) (map[string]Version, erro
 }
 
 // CreateVersion creates a new version in Jira for the given project ID and version name.
-func (client DefaultClient) CreateVersion(projectID int, versionName string) error {
-	version := Version{Name: versionName, Description: "Version " + versionName, ProjectID: projectID, Archived: false, Released: true, ReleaseDate: time.Now().Format("2006-01-02")}
+func (client DefaultClient) CreateVersion(projectID, versionName string) (Version, error) {
+	i, err := strconv.Atoi(projectID)
+	if err != nil {
+		return Version{}, err
+	}
+	version := Version{Name: versionName, Description: "Version " + versionName, ProjectID: i, Archived: false, Released: true, ReleaseDate: time.Now().Format("2006-01-02")}
 	data, err := json.Marshal(&version)
 	if err != nil {
-		return err
+		return Version{}, err
 	}
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/rest/api/2/version", client.baseURL), bytes.NewBuffer(data))
 	if debug {
 		log.Printf("jira.CreateVersion URL %s\n", req.URL)
 	}
 	if err != nil {
-		return err
+		return Version{}, err
 	}
 	req.Header.Set("Content-type", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 
 	responseCode, data, err := client.consumeResponse(req)
 	if err != nil {
-		return nil
+		return Version{}, err
 	}
 	if responseCode != http.StatusCreated {
-		return fmt.Errorf("Error getting project versions.  Status code: %d.\n", responseCode)
+		return Version{}, fmt.Errorf("Error getting project versions.  Status code: %d.\n", responseCode)
 	}
-	return nil
+
+	var v Version
+	if err := json.Unmarshal(data, &v); err != nil {
+		return Version{}, err
+	}
+	return v, nil
 }
 
-func (client DefaultClient) CreateMapping(componentID, versionName string) error {
+func (client DefaultClient) CreateMapping(projectID, componentID, versionID string) error {
 	// POST http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/
 	/*
 		body:
@@ -221,7 +222,7 @@ func (client DefaultClient) GetMappings() error {
 	return nil
 }
 
-func (client DefaultClient) GetVersionsForComponent(projectID, componentID int) error {
+func (client DefaultClient) GetVersionsForComponent(projectID, componentID string) error {
 	// GET http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/applicable_versions?projectId=10000&projectKey=&selectedComponentIds=10000
 	/*
 	   [ { "description" : "Unknown",

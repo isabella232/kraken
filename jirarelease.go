@@ -56,13 +56,20 @@ func main() {
 	components, err := jiraClient.GetComponents(project.ID)
 	check(err)
 
-	if _, present := components[*componentName]; !present {
+	component, present := components[*componentName]
+	if !present {
 		log.Fatalf("Component %s does not exist.\n", *componentName)
 	}
 
-	if _, present := versions[*versionName]; !present {
-		err = jiraClient.CreateVersion(project.ID, *versionName)
+	version, present := versions[*versionName]
+	if !present {
+		version, err = jiraClient.CreateVersion(project.ID, *versionName)
+		check(err)
 	}
+
+	err = jiraClient.CreateMapping(project.ID, component.ID, version.ID)
+	check(err)
+
 }
 
 func check(err error) {

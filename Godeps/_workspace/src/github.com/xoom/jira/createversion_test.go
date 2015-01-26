@@ -2,6 +2,7 @@ package jira
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -42,7 +43,7 @@ func TestCreateVersion(t *testing.T) {
 			t.Fatalf("Want Version 1.0 but got %s\n", v.Description)
 		}
 		if v.ProjectID != 1 {
-			t.Fatalf("Want 1 but got %s\n", v.ProjectID)
+			t.Fatalf("Want 1 but got %d\n", v.ProjectID)
 		}
 		if v.Archived {
 			t.Fatalf("Want false\n")
@@ -53,14 +54,25 @@ func TestCreateVersion(t *testing.T) {
 		if v.ReleaseDate != time.Now().Format("2006-01-02") {
 			t.Fatalf("Want "+time.Now().Format("2006-01-02")+" but got %s\n", v.ReleaseDate)
 		}
+
+		v.ID = "9999"
+
+		data, err = json.Marshal(&v)
 		w.WriteHeader(201)
+		fmt.Fprintf(w, "%s", string(data))
 	}))
 	defer testServer.Close()
 	url, _ := url.Parse(testServer.URL)
 	client := NewClient("u", "p", url)
-	err := client.CreateVersion(1, "1.0")
+	version, err := client.CreateVersion("1", "1.0")
 	if err != nil {
 		t.Fatalf("Unexpected error:  %v\n", err)
+	}
+	if version.ID != "9999" {
+		t.Fatalf("Want 9999 but got %s\n", version.ID)
+	}
+	if version.Name != "1.0" {
+		t.Fatalf("Want 1.0 but got %s\n", version.Name)
 	}
 }
 
@@ -71,7 +83,7 @@ func TestCreateVersionNon201(t *testing.T) {
 	defer testServer.Close()
 	url, _ := url.Parse(testServer.URL)
 	client := NewClient("u", "p", url)
-	err := client.CreateVersion(1, "1.0")
+	_, err := client.CreateVersion("1", "1.0")
 	if err == nil {
 		t.Fatalf("Expecting an error\n")
 	}

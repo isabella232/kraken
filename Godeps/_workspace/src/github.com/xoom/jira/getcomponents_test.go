@@ -77,7 +77,7 @@ func TestGetComponents(t *testing.T) {
 
 	url, _ := url.Parse(testServer.URL)
 	client := NewClient("u", "p", url)
-	r, err := client.GetComponents(1)
+	r, err := client.GetComponents("1")
 	if err != nil {
 		t.Fatalf("Not expecting an error %v\n", err)
 	}
@@ -106,7 +106,7 @@ func TestGetComponents404(t *testing.T) {
 
 	url, _ := url.Parse(testServer.URL)
 	client := NewClient("u", "p", url)
-	_, err := client.GetComponents(1)
+	_, err := client.GetComponents("1")
 	if err == nil {
 		t.Fatalf("Expecting an error\n")
 	}
