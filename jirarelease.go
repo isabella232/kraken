@@ -14,10 +14,10 @@ import (
 var (
 	projectKey    = flag.String("project-key", "", "JIRA project key.  For example, PLAT.")
 	baseURL       = flag.String("jira-base-url", "http://localhost:8080", "JIRA base REST URL.")
-	componentName = flag.String("component-name", "", "JIRA project component name.")
+	componentName = flag.String("component-name", "", "JIRA project component name.  For example, rest-server.")
 	username      = flag.String("jira-username", "", "JIRA admin user.")
 	password      = flag.String("jira-password", "", "JIRA admin password.")
-	versionName   = flag.String("version-name", "", "JIRA component version name.")
+	versionName   = flag.String("version-name", "", "JIRA component version name. For example, some-version.")
 	versionFlag   = flag.Bool("version", false, "Print version and exit.")
 
 	version   string
@@ -67,8 +67,8 @@ func main() {
 		check(err)
 	}
 
-	//_, err = jiraClient.CreateMapping(project.ID, component.ID, version.ID)
-	//check(err)
+	_, err = jiraClient.CreateMapping(project.ID, component.ID, version.ID)
+	check(err)
 }
 
 func check(err error) {

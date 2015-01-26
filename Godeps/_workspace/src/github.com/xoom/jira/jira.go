@@ -188,8 +188,7 @@ func (client DefaultClient) CreateVersion(projectID, versionName string) (Versio
 	if err != nil {
 		return Version{}, err
 	}
-	version := Version{Name: versionName, Description: "Version " + versionName, ProjectID: i, Archived: false, Released: true, ReleaseDate: time.Now().Format("2006-01-02")}
-	data, err := json.Marshal(&version)
+	data, err := json.Marshal(&Version{Name: versionName, Description: "Version " + versionName, ProjectID: i, Archived: false, Released: true, ReleaseDate: time.Now().Format("2006-01-02")})
 	if err != nil {
 		return Version{}, err
 	}
@@ -233,9 +232,7 @@ func (client DefaultClient) CreateMapping(projectID, componentID, versionID stri
 		return Mapping{}, err
 	}
 
-	mapping := Mapping{ProjectID: pId, ComponentID: cId, VersionID: vId, Released: false}
-
-	data, err := json.Marshal(&mapping)
+	data, err := json.Marshal(&Mapping{ProjectID: pId, ComponentID: cId, VersionID: vId, Released: false})
 	if err != nil {
 		return Mapping{}, err
 	}
