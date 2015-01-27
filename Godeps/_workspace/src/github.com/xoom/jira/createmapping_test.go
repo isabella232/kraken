@@ -16,8 +16,8 @@ func TestCreateMapping(t *testing.T) {
 			t.Fatalf("wanted POST but found %s\n", r.Method)
 		}
 		url := *r.URL
-		if url.Path != "/jira/rest/com.deniz.jira.mapping/latest/" {
-			t.Fatalf("Want /jira/rest/com.deniz.jira.mapping/latest/ but got %s\n", url.Path)
+		if url.Path != "/rest/com.deniz.jira.mapping/latest/" {
+			t.Fatalf("Want /rest/com.deniz.jira.mapping/latest/ but got %s\n", url.Path)
 		}
 		if r.Header.Get("Content-type") != "application/json" {
 			t.Fatalf("Want application/json but got %s\n", r.Header.Get("Content-type"))

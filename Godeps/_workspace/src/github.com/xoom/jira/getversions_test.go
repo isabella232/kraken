@@ -8,19 +8,6 @@ import (
 	"testing"
 )
 
-/*
-
-   Version struct {
-           ID          string `json:"id"`
-           Name        string `json:"name"`
-           Description string `json:"description"`
-           Project     string `json:"project"`
-           ProjectID   int `json:"projectId"`
-           Archived    bool   `json:"archived"`
-           Released    bool   `json:"released"`
-           ReleaseDate string `json:"releaseDate"`
-   }
-*/
 func TestGetVersions(t *testing.T) {
 	response := `
 	[ 

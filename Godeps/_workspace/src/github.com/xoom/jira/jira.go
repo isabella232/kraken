@@ -33,8 +33,8 @@ type (
 
 	// http://jiraplugins.denizoguz.com/wp-content/uploads/2014/09/REST-Manual-v0.1.pdf
 	ComponentVersions interface {
-		GetMappings() error
-		GetVersionsForComponent(projectID, componentID string) error
+		GetMappings() (map[int]Mapping, error)
+		GetVersionsForComponent(projectID, componentID string) (map[int]CVVersion, error)
 		UpdateReleaseDate(mappingID int, releaseDate string) error
 		UpdateReleasedFlag(mappingID int, released bool) error
 		CreateMapping(projectID string, componentID string, versionID string) (Mapping, error)
@@ -70,11 +70,25 @@ type (
 		ReleaseDate string `json:"releaseDate"`
 	}
 
+	// Component Version add-on's notion of a version
+	CVVersion struct {
+		ID          int    `json:"id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Released    bool   `json:"isReleased"`
+	}
+
 	Mapping struct {
-		ProjectID   int  `json:"projectId"`
-		ComponentID int  `json:"componentId"`
-		VersionID   int  `json:"versionId"`
-		Released    bool `json:"released"`
+		ID             int    `json:"id"`
+		ProjectID      int    `json:"projectId"`
+		ProjectKey     string `json:"projectKey"`
+		ProjectName    string `json:"projectName"`
+		ComponentID    int    `json:"componentId"`
+		VersionID      int    `json:"versionId"`
+		VersionName    string `json:"versionName"`
+		ComponentName  string `json:"componentName"`
+		Released       bool   `json:"released"`
+		ReleaseDateStr string `json:"releaseDateStr"`
 	}
 )
 
@@ -218,7 +232,6 @@ func (client DefaultClient) CreateVersion(projectID, versionName string) (Versio
 
 // CreateMapping creates a mapping between the given component ID and version ID in the context of the given project ID.
 func (client DefaultClient) CreateMapping(projectID, componentID, versionID string) (Mapping, error) {
-	// POST http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/
 	pId, err := strconv.Atoi(projectID)
 	if err != nil {
 		return Mapping{}, err
@@ -237,7 +250,7 @@ func (client DefaultClient) CreateMapping(projectID, componentID, versionID stri
 		return Mapping{}, err
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/jira/rest/com.deniz.jira.mapping/latest/", client.baseURL), bytes.NewBuffer(data))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/rest/com.deniz.jira.mapping/latest/", client.baseURL), bytes.NewBuffer(data))
 	if debug {
 		log.Printf("jira.CreateMapping URL %s\n", req.URL)
 	}
@@ -263,52 +276,129 @@ func (client DefaultClient) CreateMapping(projectID, componentID, versionID stri
 }
 
 // GetMappings returns all known mappings for all projects.
-func (client DefaultClient) GetMappings() error {
-	// GET http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/mappings
-	return nil
+func (client DefaultClient) GetMappings() (map[int]Mapping, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/rest/com.deniz.jira.mapping/latest/mappings", client.baseURL), nil)
+	if err != nil {
+		return nil, err
+	}
+	if debug {
+		log.Printf("jira.GetMappings URL %s\n", req.URL)
+	}
+	req.Header.Set("Accept", "application/json")
+	req.SetBasicAuth(client.username, client.password)
+
+	responseCode, data, err := client.consumeResponse(req)
+	if err != nil {
+		return nil, err
+	}
+	if responseCode != http.StatusOK {
+		return nil, fmt.Errorf("error getting mappings.  Status code: %d.\n", responseCode)
+	}
+
+	var r []Mapping
+	if err := json.Unmarshal(data, &r); err != nil {
+		return nil, err
+	}
+
+	m := make(map[int]Mapping)
+	for _, c := range r {
+		m[c.ID] = c
+	}
+	return m, nil
 }
 
 // GetVersionsForComponent returns the versions for the given component ID in the context of the given project ID.
-func (client DefaultClient) GetVersionsForComponent(projectID, componentID string) error {
-	// GET http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/applicable_versions?projectId=10000&projectKey=&selectedComponentIds=10000
-	/*
-	   [ { "description" : "Unknown",
-	       "id" : -1,
-	       "isReleased" : false,
-	       "name" : "Unknown"
-	     },
-	     { "id" : 10001,
-	       "isReleased" : true,
-	       "name" : "v2"
-	     },
-	     { "id" : 10000,
-	       "isReleased" : true,
-	       "name" : "v1"
-	     },
-	     { "id" : 10002,
-	       "isReleased" : true,
-	       "name" : "v3"
-	     }
-	   ]
-	*/
-	return nil
+func (client DefaultClient) GetVersionsForComponent(projectID, componentID string) (map[int]CVVersion, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/rest/com.deniz.jira.mapping/latest/applicable_versions?projectId=%s&selectedComponentIds=%s", client.baseURL, projectID, componentID), nil)
+	if err != nil {
+		return nil, err
+	}
+	if debug {
+		log.Printf("jira.GetVersionsForComponent URL %s\n", req.URL)
+	}
+	req.Header.Set("Accept", "application/json")
+	req.SetBasicAuth(client.username, client.password)
+
+	responseCode, data, err := client.consumeResponse(req)
+	if err != nil {
+		return nil, err
+	}
+	if responseCode != http.StatusOK {
+		return nil, fmt.Errorf("error getting mappings.  Status code: %d.\n", responseCode)
+	}
+
+	var r []CVVersion
+	if err := json.Unmarshal(data, &r); err != nil {
+		return nil, err
+	}
+
+	m := make(map[int]CVVersion)
+	for _, c := range r {
+		m[c.ID] = c
+	}
+	return m, nil
 }
 
 // UpdateReleaseDate updates the version release date to releaseDate for the given mapping ID.
 func (client DefaultClient) UpdateReleaseDate(mappingID int, releaseDate string) error {
-	// PUT http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/releaseDate/5?releaseDate=16%2FSep%2F14
+	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/rest/com.deniz.jira.mapping/latest/releaseDate/%d?releaseDate=%s", client.baseURL, mappingID, releaseDate), nil)
+	if err != nil {
+		return err
+	}
+	if debug {
+		log.Printf("jira.UpdateReleaseDate URL %s\n", req.URL)
+	}
+	req.Header.Set("Accept", "application/json")
+	req.SetBasicAuth(client.username, client.password)
+	responseCode, _, err := client.consumeResponse(req)
+	if err != nil {
+		return err
+	}
+	if responseCode != http.StatusOK {
+		return fmt.Errorf("error updating mapping release date.  Status code: %d.\n", responseCode)
+	}
 	return nil
 }
 
 // UpdateReleasedFlag updates the version released flag for the given mapping ID.
 func (client DefaultClient) UpdateReleasedFlag(mappingID int, released bool) error {
-	// PUT http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/releaseFlag/5?isReleased=true
+	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/rest/com.deniz.jira.mapping/latest/releaseFlag/%d?isReleased=%v", client.baseURL, mappingID, released), nil)
+	if err != nil {
+		return err
+	}
+	if debug {
+		log.Printf("jira.UpdateReleaseFlag URL %s\n", req.URL)
+	}
+	req.Header.Set("Accept", "application/json")
+	req.SetBasicAuth(client.username, client.password)
+	responseCode, _, err := client.consumeResponse(req)
+	if err != nil {
+		return err
+	}
+	if responseCode != http.StatusOK {
+		return fmt.Errorf("error updating mapping is-released flag.  Status code: %d.\n", responseCode)
+	}
 	return nil
 }
 
 // DeleteMapping deletes the mapping for the given mapping ID.
 func (client DefaultClient) DeleteMapping(mappingID int) error {
-	// DELETE http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/5
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/rest/com.deniz.jira.mapping/latest/%d", client.baseURL, mappingID), nil)
+	if err != nil {
+		return err
+	}
+	if debug {
+		log.Printf("jira.DeleteMapping URL %s\n", req.URL)
+	}
+	req.Header.Set("Accept", "application/json")
+	req.SetBasicAuth(client.username, client.password)
+	responseCode, _, err := client.consumeResponse(req)
+	if err != nil {
+		return err
+	}
+	if responseCode != http.StatusNoContent {
+		return fmt.Errorf("error deleting mapping.  Status code: %d.\n", responseCode)
+	}
 	return nil
 }
 
