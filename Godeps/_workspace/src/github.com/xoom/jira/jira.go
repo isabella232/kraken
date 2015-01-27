@@ -82,12 +82,12 @@ func init() {
 	debug = strings.ToLower(os.Getenv("JIRA_DEBUG")) == "true"
 }
 
-// NewClient returns a new default Jira client.
+// NewClient returns a new default Jira client for the given Jira admin username/password and base REST URL.
 func NewClient(username, password string, baseURL *url.URL) Jira {
 	return DefaultClient{username: username, password: password, baseURL: baseURL, httpClient: &http.Client{Timeout: 10 * time.Second}}
 }
 
-// GetProject returns a representation of a Jira project.
+// GetProject returns a representation of a Jira project for the given project key.  An example of a key is MYPROJ.
 func (client DefaultClient) GetProject(projectKey string) (Project, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/rest/api/2/project/%s", client.baseURL, projectKey), nil)
 	if err != nil {
@@ -104,7 +104,7 @@ func (client DefaultClient) GetProject(projectKey string) (Project, error) {
 		return Project{}, err
 	}
 	if responseCode != http.StatusOK {
-		return Project{}, fmt.Errorf("Error getting project versions.  Status code: %d.\n", responseCode)
+		return Project{}, fmt.Errorf("error getting project.  Status code: %d.\n", responseCode)
 	}
 
 	var r Project
@@ -115,7 +115,7 @@ func (client DefaultClient) GetProject(projectKey string) (Project, error) {
 	return r, nil
 }
 
-// GetComponents returns a map of Component indexed by component name.
+// GetComponents returns a map of Component indexed by component name for the given project ID.
 func (client DefaultClient) GetComponents(projectID string) (map[string]Component, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/rest/api/2/project/%s/components", client.baseURL, projectID), nil)
 	if err != nil {
@@ -132,7 +132,7 @@ func (client DefaultClient) GetComponents(projectID string) (map[string]Componen
 		return nil, err
 	}
 	if responseCode != http.StatusOK {
-		return nil, fmt.Errorf("Error getting project versions.  Status code: %d.\n", responseCode)
+		return nil, fmt.Errorf("error getting project components.  Status code: %d.\n", responseCode)
 	}
 
 	var r []Component
@@ -148,7 +148,7 @@ func (client DefaultClient) GetComponents(projectID string) (map[string]Componen
 	return m, nil
 }
 
-// GetVersions returns a map of Version indexed by version name.
+// GetVersions returns a map of Version indexed by version name for the given project ID.
 func (client DefaultClient) GetVersions(projectID string) (map[string]Version, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/rest/api/2/project/%s/versions", client.baseURL, projectID), nil)
 	if err != nil {
@@ -165,7 +165,7 @@ func (client DefaultClient) GetVersions(projectID string) (map[string]Version, e
 		return nil, err
 	}
 	if responseCode != http.StatusOK {
-		return nil, fmt.Errorf("Error getting project versions.  Status code: %d.\n", responseCode)
+		return nil, fmt.Errorf("error getting project versions.  Status code: %d.\n", responseCode)
 	}
 
 	var r []Version
@@ -206,7 +206,7 @@ func (client DefaultClient) CreateVersion(projectID, versionName string) (Versio
 		return Version{}, err
 	}
 	if responseCode != http.StatusCreated {
-		return Version{}, fmt.Errorf("Error getting project versions.  Status code: %d.\n", responseCode)
+		return Version{}, fmt.Errorf("error creating project version.  Status code: %d.\n", responseCode)
 	}
 
 	var v Version
@@ -216,6 +216,7 @@ func (client DefaultClient) CreateVersion(projectID, versionName string) (Versio
 	return v, nil
 }
 
+// CreateMapping creates a mapping between the given component ID and version ID in the context of the given project ID.
 func (client DefaultClient) CreateMapping(projectID, componentID, versionID string) (Mapping, error) {
 	// POST http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/
 	pId, err := strconv.Atoi(projectID)
@@ -251,7 +252,7 @@ func (client DefaultClient) CreateMapping(projectID, componentID, versionID stri
 		return Mapping{}, err
 	}
 	if responseCode != http.StatusCreated {
-		return Mapping{}, fmt.Errorf("Error mapping version.  Status code: %d.\n", responseCode)
+		return Mapping{}, fmt.Errorf("error creating mapped version.  Status code: %d.\n", responseCode)
 	}
 
 	var v Mapping
@@ -261,11 +262,13 @@ func (client DefaultClient) CreateMapping(projectID, componentID, versionID stri
 	return Mapping{}, nil
 }
 
+// GetMappings returns all known mappings for all projects.
 func (client DefaultClient) GetMappings() error {
 	// GET http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/mappings
 	return nil
 }
 
+// GetVersionsForComponent returns the versions for the given component ID in the context of the given project ID.
 func (client DefaultClient) GetVersionsForComponent(projectID, componentID string) error {
 	// GET http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/applicable_versions?projectId=10000&projectKey=&selectedComponentIds=10000
 	/*
@@ -291,16 +294,19 @@ func (client DefaultClient) GetVersionsForComponent(projectID, componentID strin
 	return nil
 }
 
+// UpdateReleaseDate updates the version release date to releaseDate for the given mapping ID.
 func (client DefaultClient) UpdateReleaseDate(mappingID int, releaseDate string) error {
 	// PUT http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/releaseDate/5?releaseDate=16%2FSep%2F14
 	return nil
 }
 
+// UpdateReleasedFlag updates the version released flag for the given mapping ID.
 func (client DefaultClient) UpdateReleasedFlag(mappingID int, released bool) error {
 	// PUT http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/releaseFlag/5?isReleased=true
 	return nil
 }
 
+// DeleteMapping deletes the mapping for the given mapping ID.
 func (client DefaultClient) DeleteMapping(mappingID int) error {
 	// DELETE http://localhost:2990/jira/rest/com.deniz.jira.mapping/latest/5
 	return nil
