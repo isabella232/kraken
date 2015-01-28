@@ -75,7 +75,7 @@ func main() {
 	check(err)
 	var mapping *jira.Mapping
 	for _, m := range mappings {
-		if m.VersionName == *versionName && m.ComponentName == *componentName {
+		if m.ProjectKey == *projectKey && m.VersionName == *versionName && m.ComponentName == *componentName {
 			mapping = &m
 			break
 		}
