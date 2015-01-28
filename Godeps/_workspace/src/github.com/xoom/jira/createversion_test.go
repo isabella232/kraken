@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
-	"time"
 )
 
 func TestCreateVersion(t *testing.T) {
@@ -48,11 +47,11 @@ func TestCreateVersion(t *testing.T) {
 		if v.Archived {
 			t.Fatalf("Want false\n")
 		}
-		if !v.Released {
-			t.Fatalf("Want true\n")
+		if v.Released {
+			t.Fatalf("Want false\n")
 		}
-		if v.ReleaseDate != time.Now().Format("2006-01-02") {
-			t.Fatalf("Want "+time.Now().Format("2006-01-02")+" but got %s\n", v.ReleaseDate)
+		if v.ReleaseDate != "" {
+			t.Fatalf("Want <empty string> but got %s\n", v.ReleaseDate)
 		}
 
 		v.ID = "9999"

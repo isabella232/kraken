@@ -201,7 +201,8 @@ func (client DefaultClient) CreateVersion(projectID, versionName string) (Versio
 	if err != nil {
 		return Version{}, err
 	}
-	data, err := json.Marshal(&Version{Name: versionName, Description: "Version " + versionName, ProjectID: i, Archived: false, Released: true, ReleaseDate: time.Now().Format("2006-01-02")})
+	//data, err := json.Marshal(&Version{Name: versionName, Description: "Version " + versionName, ProjectID: i, Archived: false, Released: true, ReleaseDate: time.Now().Format("2006-01-02")})
+	data, err := json.Marshal(&Version{Name: versionName, Description: "Version " + versionName, ProjectID: i, Archived: false})
 	if err != nil {
 		return Version{}, err
 	}
@@ -268,10 +269,13 @@ func (client DefaultClient) CreateMapping(projectID, componentID, versionID stri
 		return Mapping{}, fmt.Errorf("error creating mapped version.  Status code: %d.\n", responseCode)
 	}
 
-	var v Mapping
-	if err := json.Unmarshal(data, &v); err != nil {
-		return Mapping{}, err
-	}
+	// No mapping object is returned with 201 created.
+	/*
+		var v Mapping
+		if err := json.Unmarshal(data, &v); err != nil {
+			return Mapping{}, err
+		}
+	*/
 	return Mapping{}, nil
 }
 
@@ -341,7 +345,7 @@ func (client DefaultClient) GetVersionsForComponent(projectID, componentID strin
 
 // UpdateReleaseDate updates the version release date to releaseDate for the given mapping ID.
 func (client DefaultClient) UpdateReleaseDate(mappingID int, releaseDate string) error {
-	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/rest/com.deniz.jira.mapping/latest/releaseDate/%d?releaseDate=%s", client.baseURL, mappingID, releaseDate), nil)
+	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/rest/com.deniz.jira.mapping/latest/releaseDate/%d?releaseDate=%s", client.baseURL, mappingID, url.QueryEscape(releaseDate)), nil)
 	if err != nil {
 		return err
 	}

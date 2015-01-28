@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/xoom/jira"
 )
@@ -69,6 +70,29 @@ func main() {
 
 	_, err = jiraClient.CreateMapping(project.ID, component.ID, version.ID)
 	check(err)
+
+	mappings, err := jiraClient.GetMappings()
+	check(err)
+	var mapping *jira.Mapping
+	for _, m := range mappings {
+		if m.VersionName == *versionName && m.ComponentName == *componentName {
+			mapping = &m
+			break
+		}
+	}
+	if mapping == nil {
+		log.Printf("Mapping object not found")
+		return
+	}
+	err = jiraClient.UpdateReleasedFlag(mapping.ID, true)
+	check(err)
+	err = jiraClient.UpdateReleaseDate(mapping.ID, today())
+	check(err)
+}
+
+func today() string {
+	t := time.Now()
+	return fmt.Sprintf("%d/%s/%d", t.Day(), t.Month().String()[:3], t.Year()%100)
 }
 
 func check(err error) {
