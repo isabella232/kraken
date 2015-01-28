@@ -50,9 +50,6 @@ func TestCreateVersion(t *testing.T) {
 		if v.Released {
 			t.Fatalf("Want false\n")
 		}
-		if v.ReleaseDate != "" {
-			t.Fatalf("Want <empty string> but got %s\n", v.ReleaseDate)
-		}
 
 		v.ID = "9999"
 

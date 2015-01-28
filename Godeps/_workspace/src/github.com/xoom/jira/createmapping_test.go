@@ -31,14 +31,6 @@ func TestCreateMapping(t *testing.T) {
 			t.Fatalf("error reading POST body: %v\n", err)
 		}
 
-		/*
-		   Mapping struct {
-		                ProjectID   int  `json:"projectId"`
-		                ComponentID int  `json:"componentId"`
-		                VersionID   int  `json:"versionId"`
-		                Released    bool `json:"released"`
-		        }
-		*/
 		var v Mapping
 		if err := json.Unmarshal(data, &v); err != nil {
 			t.Fatalf("Unexpected error: %v\n", err)
@@ -56,17 +48,22 @@ func TestCreateMapping(t *testing.T) {
 			t.Fatalf("Want false\n")
 		}
 
-		data, err = json.Marshal(&v)
+		w.Header().Add("Location", "http://host/2/3")
 		w.WriteHeader(201)
+
+		data, err = json.Marshal(&v)
 		fmt.Fprintf(w, "%s", string(data))
 	}))
 	defer testServer.Close()
 
 	url, _ := url.Parse(testServer.URL)
 	client := NewClient("u", "p", url)
-	_, err := client.CreateMapping("1", "2", "3")
+	mapping, err := client.CreateMapping("1", "2", "3")
 	if err != nil {
 		t.Fatalf("Unexpected error:  %v\n", err)
+	}
+	if mapping.ID != 3 {
+		t.Fatalf("Want 3 but got:  %v\n", mapping.ID)
 	}
 }
 
