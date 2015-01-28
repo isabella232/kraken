@@ -13,13 +13,14 @@ import (
 )
 
 var (
-	projectKey    = flag.String("project-key", "", "JIRA project key.  For example, PLAT.")
-	baseURL       = flag.String("jira-base-url", "http://localhost:8080", "JIRA base REST URL.")
-	componentName = flag.String("component-name", "", "JIRA project component name.  For example, rest-server.")
-	username      = flag.String("jira-username", "", "JIRA admin user.")
-	password      = flag.String("jira-password", "", "JIRA admin password.")
-	versionName   = flag.String("version-name", "", "JIRA component version name. For example, some-version.")
-	versionFlag   = flag.Bool("version", false, "Print version and exit.")
+	projectKey         = flag.String("project-key", "", "JIRA project key.  For example, PLAT.")
+	baseURL            = flag.String("jira-base-url", "http://localhost:8080", "JIRA base REST URL.")
+	componentName      = flag.String("component-name", "", "JIRA project component name.  For example, rest-server.")
+	username           = flag.String("jira-username", "", "JIRA admin user.")
+	password           = flag.String("jira-password", "", "JIRA admin password.")
+	releaseVersionName = flag.String("release-version-name", "", "JIRA release version name. For example, 1.1.")
+	nextVersionName    = flag.String("next-version-name", "", "JIRA next version name. For example, 1.2.")
+	versionFlag        = flag.Bool("version", false, "Print version and exit.")
 
 	version   string
 	commit    string
@@ -44,50 +45,45 @@ func main() {
 	}
 
 	url, err := url.Parse(*baseURL)
-	check(err)
+	check("Error parsing Jira base URL", err)
 
 	jiraClient := jira.NewClient(*username, *password, url)
 
 	project, err := jiraClient.GetProject(*projectKey)
-	check(err)
+	check("Error getting projects", err)
+	log.Printf("Retrieved project: %s\n", *projectKey)
 
 	versions, err := jiraClient.GetVersions(project.ID)
-	check(err)
+	check("Error getting project versions", err)
+	log.Printf("Retrieved %d project versions: %s\n", len(versions))
 
 	components, err := jiraClient.GetComponents(project.ID)
-	check(err)
+	check("Error getting project components", err)
+	log.Printf("Retrieved %d project components: %s\n", len(components))
 
 	component, present := components[*componentName]
 	if !present {
 		log.Fatalf("Component %s does not exist.\n", *componentName)
 	}
 
-	version, present := versions[*versionName]
+	version, present := versions[*releaseVersionName]
+	log.Printf("Retrieved %d project versions: %s\n", len(versions))
 	if !present {
-		version, err = jiraClient.CreateVersion(project.ID, *versionName)
-		check(err)
+		version, err = jiraClient.CreateVersion(project.ID, *releaseVersionName)
+		check("Error creating version", err)
+		log.Printf("Created project versions: %s\n", version.Name)
 	}
 
-	_, err = jiraClient.CreateMapping(project.ID, component.ID, version.ID)
-	check(err)
+	mapping, err := jiraClient.CreateMapping(project.ID, component.ID, version.ID)
+	check("Error creating mapping", err)
+	log.Printf("Created mapping: %d\n", mapping.ID)
 
-	mappings, err := jiraClient.GetMappings()
-	check(err)
-	var mapping *jira.Mapping
-	for _, m := range mappings {
-		if m.ProjectKey == *projectKey && m.VersionName == *versionName && m.ComponentName == *componentName {
-			mapping = &m
-			break
-		}
-	}
-	if mapping == nil {
-		log.Printf("Mapping object not found")
-		return
-	}
 	err = jiraClient.UpdateReleasedFlag(mapping.ID, true)
-	check(err)
+	check("Error updating release flag", err)
+
 	err = jiraClient.UpdateReleaseDate(mapping.ID, today())
-	check(err)
+	check("Error updating release date", err)
+
 }
 
 func today() string {
@@ -95,12 +91,12 @@ func today() string {
 	return fmt.Sprintf("%d/%s/%d", t.Day(), t.Month().String()[:3], t.Year()%100)
 }
 
-func check(err error) {
+func check(message string, err error) {
 	trace := make([]byte, 10*1024)
 	_ = runtime.Stack(trace, false)
 	if err != nil {
-		log.Fatalf("Error: %+v\n", err)
-		log.Printf("%s", trace)
+		log.Fatalf("%s: %+v\n", message, err)
+		log.Printf("%s", string(trace))
 	}
 }
 
@@ -112,7 +108,7 @@ func validate() []error {
 	if *componentName == "" {
 		errors = append(errors, fmt.Errorf("component-name must be provided"))
 	}
-	if *versionName == "" {
+	if *releaseVersionName == "" {
 		errors = append(errors, fmt.Errorf("version-name must be provided"))
 	}
 	if *username == "" {
