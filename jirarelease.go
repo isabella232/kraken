@@ -41,9 +41,9 @@ func init() {
 func main() {
 	if err := validate(); len(err) != 0 {
 		for _, i := range err {
-			log.Printf("Error: %+v\n", i)
+			log.Printf("Error: %+v\nExiting.", i)
 		}
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	url, err := url.Parse(*baseURL)
@@ -65,7 +65,8 @@ func main() {
 
 	component, present := components[*componentName]
 	if !present {
-		log.Fatalf("Component %s does not exist.\n", *componentName)
+		log.Printf("Component %s does not exist.\nExiting.\n", *componentName)
+		os.Exit(0)
 	}
 
 	// get mappings for all projects
@@ -153,7 +154,8 @@ func today() string {
 
 func check(message string, err error) {
 	if err != nil {
-		log.Fatalf("%s: %+v\n", message, err)
+		log.Printf("%s: %+v\nExiting.", message, err)
+		os.Exit(0)
 	}
 }
 
