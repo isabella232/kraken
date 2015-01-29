@@ -16,7 +16,7 @@ fi
 
 NEXT_VERSION=$(perl -e 'if ( $ARGV[0] =~ /(.*)$ARGV[1]$/ ) { print $1 } else { exit(1) }' -- $DEVELOPMENT_VERSION -SNAPSHOT)
 if [ $? != 0 ]; then
-	echo "DEVELOPMENT_VERSION does not contain the suffix -SNAPSHOT  Cannot determine Jira component name. Exiting."
+	echo "DEVELOPMENT_VERSION does not contain the suffix -SNAPSHOT  Cannot determine component next-version name. Exiting."
 	exit 1
 fi
 
