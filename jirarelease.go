@@ -68,7 +68,9 @@ func main() {
 		log.Fatalf("Component %s does not exist.\n", *componentName)
 	}
 
+	// get mappings for all projects
 	mappings, err := jiraClient.GetMappings()
+	check("Error getting mappings", err)
 
 	// fetch or create release-version
 	releaseVersion, err := getOrCreateVersion(project.ID, *releaseVersionName, versions, jiraClient)
@@ -86,23 +88,16 @@ func main() {
 
 	// next-version
 	if *nextVersionName != "" {
-		nextVersion, present := versions[*nextVersionName]
-		if !present {
-			log.Printf("Creating project next-version %s ...\n", nextVersion.Name)
-			nextVersion, err = jiraClient.CreateVersion(project.ID, *nextVersionName)
-			check("Error creating version", err)
-			log.Printf("Created project next-version %s\n", nextVersion.Name)
-		}
-		// Create the next-version mapping if it does not exist
-		if nextMapping, present := findMapping(mappings, project.ID, component.ID, nextVersion.ID); !present {
-			// create the release-version mapping, set released, and release with today's date
-			nextMapping, err := jiraClient.CreateMapping(project.ID, component.ID, nextVersion.ID)
-			check("Error creating mapping", err)
-			log.Printf("Created next-version mapping: %d\n", nextMapping.ID)
-		} else {
-			err = jiraClient.UpdateReleasedFlag(nextMapping.ID, false)
-			check("Error updating release flag for next-version", err)
-		}
+		nextVersion, err := getOrCreateVersion(project.ID, *nextVersionName, versions, jiraClient)
+		check("Error creating next-version", err)
+
+		// Create the next-version mapping if it does not exist.
+		nextMapping, err := getOrCreateMapping(project.ID, component.ID, nextVersion.ID, mappings, jiraClient)
+		check("Error creating next-version mapping", err)
+
+		// Mark as unreleased.
+		err = jiraClient.UpdateReleasedFlag(nextMapping.ID, false)
+		check("Error updating released flag for next-version mapping", err)
 	}
 }
 
@@ -145,11 +140,9 @@ func findMapping(mappings map[int]jira.Mapping, projectID, componentID, versionI
 		cID := fmt.Sprintf("%d", mapping.ComponentID)
 		vID := fmt.Sprintf("%d", mapping.VersionID)
 		if pID == projectID && cID == componentID && vID == versionID {
-			fmt.Println("findmapping returning with hit")
 			return mapping, true
 		}
 	}
-	fmt.Println("findmapping returning with miss")
 	return jira.Mapping{}, false
 }
 
