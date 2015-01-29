@@ -75,13 +75,8 @@ func main() {
 	check("Error getOrCreateVersion()", err)
 
 	// Create the release-version mapping if it does not exist
-	releaseMapping, present := findMapping(mappings, project.ID, component.ID, releaseVersion.ID)
-	if !present {
-		// create the release-version mapping, set released, and release with today's date
-		releaseMapping, err := jiraClient.CreateMapping(project.ID, component.ID, releaseVersion.ID)
-		check("Error creating mapping", err)
-		log.Printf("Created release-version mapping: %d\n", releaseMapping.ID)
-	}
+	releaseMapping, err := getOrCreateMapping(project.ID, component.ID, releaseVersion.ID, mappings, jiraClient)
+	check("Error getOrCreateMapping()", err)
 
 	err = jiraClient.UpdateReleasedFlag(releaseMapping.ID, true)
 	check("Error updating release flag for release-version", err)
@@ -105,7 +100,7 @@ func main() {
 			check("Error creating mapping", err)
 			log.Printf("Created next-version mapping: %d\n", nextMapping.ID)
 		} else {
-			err = jiraClient.UpdateReleasedFlag(nextMapping.ID, true)
+			err = jiraClient.UpdateReleasedFlag(nextMapping.ID, false)
 			check("Error updating release flag for next-version", err)
 		}
 	}
@@ -127,12 +122,34 @@ func getOrCreateVersion(projectID, versionName string, versions map[string]jira.
 	return version, nil
 }
 
-func findMapping(mappings map[int]jira.Mapping, projectID, componentID, versionName string) (jira.Mapping, bool) {
+func getOrCreateMapping(projectID, componentID, releaseVersionID string, mappings map[int]jira.Mapping, client jira.ComponentVersions) (jira.Mapping, error) {
+	var mapping jira.Mapping
+	var present bool
+	var err error
+
+	mapping, present = findMapping(mappings, projectID, componentID, releaseVersionID)
+	if !present {
+		// create the release-version mapping, set released, and release with today's date
+		mapping, err = client.CreateMapping(projectID, componentID, releaseVersionID)
+		if err != nil {
+			return jira.Mapping{}, err
+		}
+		log.Printf("Created version mapping: %d\n", mapping.ID)
+	}
+	return mapping, nil
+}
+
+func findMapping(mappings map[int]jira.Mapping, projectID, componentID, versionID string) (jira.Mapping, bool) {
 	for _, mapping := range mappings {
-		if fmt.Sprintf("%d", mapping.ProjectID) == projectID && fmt.Sprintf("%d", mapping.ComponentID) == componentID && mapping.VersionName == versionName {
+		pID := fmt.Sprintf("%d", mapping.ProjectID)
+		cID := fmt.Sprintf("%d", mapping.ComponentID)
+		vID := fmt.Sprintf("%d", mapping.VersionID)
+		if pID == projectID && cID == componentID && vID == versionID {
+			fmt.Println("findmapping returning with hit")
 			return mapping, true
 		}
 	}
+	fmt.Println("findmapping returning with miss")
 	return jira.Mapping{}, false
 }
 
