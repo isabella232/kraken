@@ -23,7 +23,7 @@ Run
        -version=false: Print version and exit.
 
 A mapping is defined as an entry returned by Component Versions
-get-mappings that bears a give project-id, component-id, and
+get-mappings that bears a given project-id, component-id, and
 version-id.
 
 The following invocation will get or create a mapping for version
@@ -43,9 +43,9 @@ it as unreleased version 2.2.
 Idempotency
 -----------
 
-The tool can be run more than once with the same arguments, though
-that would be an odd use case.  
-
-In that case the mappings will exist for both the release and next
-versions of the component.  The release version will not be mutated
-in any way.  The next version will again be marked as unreleased.
+jirarelease is not idempotent for two successive runs with the same
+arguments.  Consider a jirarelease run from yesterday.  If jirarelease
+is run today with the same arguments, the release mapping will exist
+and will be marked as released with yesterday's date.  Because the
+mapping is already marked as released, jirarelease will not attempt
+to udpate the mapping's release date with today's date.

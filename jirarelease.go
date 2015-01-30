@@ -91,7 +91,7 @@ func main() {
 		check("Error updating release date for release-version", err)
 		log.Printf("Updated release date for release mapping %+v\n", releaseMapping)
 	} else {
-		log.Printf("Release mapping is already released.  Skipping. %+v\n", releaseMapping)
+		log.Printf("Release-mapping is already released.  Skipping. %+v\n", releaseMapping)
 	}
 
 	// next-version
@@ -100,13 +100,8 @@ func main() {
 		check("Error creating next-version", err)
 
 		// Create the next-version mapping if it does not exist.
-		nextMapping, err := getOrCreateMapping(project.ID, component.ID, nextVersion.ID, mappings, jiraClient)
+		_, err = getOrCreateMapping(project.ID, component.ID, nextVersion.ID, mappings, jiraClient)
 		check("Error creating next-version mapping", err)
-
-		// Mark as unreleased.
-		err = jiraClient.UpdateReleasedFlag(nextMapping.ID, false)
-		check("Error updating released flag for next-version mapping", err)
-		log.Printf("Updated released flag for next mapping %+v\n", nextMapping)
 	}
 }
 
