@@ -1,5 +1,5 @@
 
-NAME := jirarelease
+NAME := kraken
 ARCH := amd64
 VERSION := 1.0
 DATE := $(shell date)

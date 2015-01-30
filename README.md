@@ -1,4 +1,4 @@
-Jira release tool that works with Component Versions Jira Add-on.
+Kraken:  A Jira release tool that works with Component Versions Jira Add-on.
 
 Jira API: https://docs.atlassian.com/jira/REST/latest/
 
@@ -12,7 +12,7 @@ Build
 Run
 ---
 
-     Usage of ./jirarelease-darwin-amd64:
+     Usage of ./kraken-darwin-amd64:
        -component-name="": JIRA project component name.  For example, rest-server.  Required.
        -jira-base-url="http://localhost:8080": JIRA base REST URL.  Required.
        -jira-password="": JIRA admin password.  Required.
@@ -31,7 +31,7 @@ The following invocation will get or create a mapping for version
 date, and get or create a mapping for the same component and mark
 it as unreleased version 2.2.
 
-     $ ./jirarelease-darwin-amd64 \
+     $ ./kraken-darwin-amd64 \
 	-jira-base-url http://localhost:8080 \
 	-jira-username admin \
 	-jira-password admin123 \
@@ -43,14 +43,13 @@ it as unreleased version 2.2.
 Idempotency
 -----------
 
-jirarelease is idempotent for two successive runs with the same
-arguments.  
+kraken is idempotent for two successive runs with the same arguments.
 
-Consider a jirarelease run from yesterday.  If jirarelease is run
-today with the same arguments, the release mapping will exist and
-will be marked as released with yesterday's date.  Because the
-mapping is already marked as released, jirarelease will not attempt
-to update the mapping's release date with today's date and will
-therefore produce the same result as yesterday's run for the release
-mapping.  As concerns the next-mapping, jirarelease returns the
-mapping if it exists and creates if it does not exist.
+Consider a kraken run from yesterday.  If kraken is run today
+with the same arguments, the release mapping will exist and will
+be marked as released with yesterday's date.  Because the mapping
+is already marked as released, kraken will not attempt to
+update the mapping's release date with today's date and will therefore
+produce the same result as yesterday's run for the release mapping.
+As concerns the next-mapping, kraken returns the mapping if
+it exists and creates if it does not exist.
