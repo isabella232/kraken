@@ -81,11 +81,18 @@ func main() {
 	releaseMapping, err := getOrCreateMapping(project.ID, component.ID, releaseVersion.ID, mappings, jiraClient)
 	check("Error getOrCreateMapping()", err)
 
-	err = jiraClient.UpdateReleasedFlag(releaseMapping.ID, true)
-	check("Error updating release flag for release-version", err)
+	// Do not update a mapping that is already released.
+	if !releaseMapping.Released {
+		err = jiraClient.UpdateReleasedFlag(releaseMapping.ID, true)
+		check("Error updating release flag for release-version", err)
+		log.Printf("Updated released flag for release mapping %+v\n", releaseMapping)
 
-	err = jiraClient.UpdateReleaseDate(releaseMapping.ID, today())
-	check("Error updating release date for release-version", err)
+		err = jiraClient.UpdateReleaseDate(releaseMapping.ID, today())
+		check("Error updating release date for release-version", err)
+		log.Printf("Updated release date for release mapping %+v\n", releaseMapping)
+	} else {
+		log.Printf("Release mapping is already released.  Skipping. %+v\n", releaseMapping)
+	}
 
 	// next-version
 	if *nextVersionName != "" {
@@ -99,6 +106,7 @@ func main() {
 		// Mark as unreleased.
 		err = jiraClient.UpdateReleasedFlag(nextMapping.ID, false)
 		check("Error updating released flag for next-version mapping", err)
+		log.Printf("Updated released flag for next mapping %+v\n", nextMapping)
 	}
 }
 
