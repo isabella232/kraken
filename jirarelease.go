@@ -91,7 +91,7 @@ func main() {
 		check("Error updating release date for release-version", err)
 		log.Printf("Updated release date for release mapping %+v\n", releaseMapping)
 	} else {
-		log.Printf("Release-mapping is already released.  Skipping. %+v\n", releaseMapping)
+		log.Printf("Skipping already released release mapping: %+v\n", releaseMapping)
 	}
 
 	// next-version
