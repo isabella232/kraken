@@ -43,9 +43,14 @@ it as unreleased version 2.2.
 Idempotency
 -----------
 
-jirarelease is not idempotent for two successive runs with the same
-arguments.  Consider a jirarelease run from yesterday.  If jirarelease
-is run today with the same arguments, the release mapping will exist
-and will be marked as released with yesterday's date.  Because the
+jirarelease is idempotent for two successive runs with the same
+arguments.  
+
+Consider a jirarelease run from yesterday.  If jirarelease is run
+today with the same arguments, the release mapping will exist and
+will be marked as released with yesterday's date.  Because the
 mapping is already marked as released, jirarelease will not attempt
-to udpate the mapping's release date with today's date.
+to update the mapping's release date with today's date and will
+therefore produce the same result as yesterday's run for the release
+mapping.  As concerns the next-mapping, jirarelease returns the
+mapping if it exists and creates if it does not exist.
