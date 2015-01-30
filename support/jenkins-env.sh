@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-# If you run jirarelease from Jenkins, this can help parse the component name and versions.
+# If you run kraken from Jenkins, this can help parse the component name and versions.
 
 set -vux
 
@@ -29,7 +29,7 @@ if [ $? != 0 ]; then
 	exit 1
 fi
 
-echo ./jirarelease-linux-amd64 \
+echo ./kraken-linux-amd64 \
 	-jira-base-url http://localhost:8080 \
 	-jira-username admin \
 	-jira-password admin123 \

@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/xoom/jirarelease",
+	"ImportPath": "github.com/xoom/kraken",
 	"GoVersion": "go1.4.1",
 	"Deps": [
 		{
