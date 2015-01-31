@@ -98,7 +98,7 @@ func TestGetMappings(t *testing.T) {
 		t.Fatalf("Want service-one but got %s\n", mapping.ComponentName)
 	}
 	if mapping.ProjectKey != "PRJ" {
-		t.Fatalf("Want PRJ", mapping.ProjectKey)
+		t.Fatalf("Want PRJ")
 	}
 }
 
