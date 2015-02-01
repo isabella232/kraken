@@ -24,15 +24,12 @@ var (
 	nextVersionName = flag.String("next-version-name", "", "JIRA next version name. For example, 1.2.  Optional.")
 	versionFlag     = flag.Bool("version", false, "Print version and exit.")
 
-	version   string
-	commit    string
-	buildTime string
-	sdkInfo   string
+	buildInfo string
 )
 
 func init() {
 	flag.Parse()
-	log.Printf("Version: %s, CommitID: %s, build time: %s, SDK Info: %s\n", version, commit, buildTime, sdkInfo)
+	log.Printf("%s\n", buildInfo)
 	if *versionFlag {
 		os.Exit(0)
 	}
