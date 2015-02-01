@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 )
 
 var debug bool
+var logger *log.Logger
 
 type (
 	Jira interface {
@@ -92,13 +94,21 @@ type (
 )
 
 func init() {
-	debug = strings.ToLower(os.Getenv("JIRA_DEBUG")) == "true"
-}
-
-func logger(format string, v ...interface{}) {
-	if debug {
-		log.Printf(format, v)
+	for _, v := range strings.Split(os.Getenv("GODEBUG"), ",") {
+		if v == "jira" {
+			debug = true
+			break
+		}
 	}
+	var writeCloser io.WriteCloser
+	if debug {
+		writeCloser = os.Stdout
+	} else {
+		if f, err := os.OpenFile(os.DevNull, os.O_WRONLY, os.FileMode(0666)); err == nil {
+			writeCloser = f
+		}
+	}
+	logger = log.New(writeCloser, "INFO ", log.Ldate|log.Ltime|log.Lshortfile)
 }
 
 // NewClient returns a new default Jira client for the given Jira admin username/password and base REST URL.
@@ -112,7 +122,7 @@ func (client DefaultClient) GetProject(projectKey string) (Project, error) {
 	if err != nil {
 		return Project{}, err
 	}
-	logger("jira.GetComponents URL %s\n", req.URL)
+	logger.Printf("jira.GetComponents URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 
@@ -138,7 +148,7 @@ func (client DefaultClient) GetComponents(projectID string) (map[string]Componen
 	if err != nil {
 		return nil, err
 	}
-	logger("jira.GetComponents URL %s\n", req.URL)
+	logger.Printf("jira.GetComponents URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 
@@ -169,7 +179,7 @@ func (client DefaultClient) GetVersions(projectID string) (map[string]Version, e
 	if err != nil {
 		return nil, err
 	}
-	logger("jira.GetVersions URL %s\n", req.URL)
+	logger.Printf("jira.GetVersions URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 
@@ -206,7 +216,7 @@ func (client DefaultClient) CreateVersion(projectID, versionName string) (Versio
 		return Version{}, err
 	}
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/rest/api/2/version", client.baseURL), bytes.NewBuffer(data))
-	logger("jira.CreateVersion URL %s\n", req.URL)
+	logger.Printf("jira.CreateVersion URL %s\n", req.URL)
 	if err != nil {
 		return Version{}, err
 	}
@@ -249,7 +259,7 @@ func (client DefaultClient) CreateMapping(projectID, componentID, versionID stri
 	}
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/rest/com.deniz.jira.mapping/latest/", client.baseURL), bytes.NewBuffer(data))
-	logger("jira.CreateMapping URL %s\n", req.URL)
+	logger.Printf("jira.CreateMapping URL %s\n", req.URL)
 	if err != nil {
 		return Mapping{}, err
 	}
@@ -292,7 +302,7 @@ func (client DefaultClient) GetMappings() (map[int]Mapping, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger("jira.GetMappings URL %s\n", req.URL)
+	logger.Printf("jira.GetMappings URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 
@@ -322,7 +332,7 @@ func (client DefaultClient) GetVersionsForComponent(projectID, componentID strin
 	if err != nil {
 		return nil, err
 	}
-	logger("jira.GetVersionsForComponent URL %s\n", req.URL)
+	logger.Printf("jira.GetVersionsForComponent URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 
@@ -352,7 +362,7 @@ func (client DefaultClient) UpdateReleaseDate(mappingID int, releaseDate string)
 	if err != nil {
 		return err
 	}
-	logger("jira.UpdateReleaseDate URL %s\n", req.URL)
+	logger.Printf("jira.UpdateReleaseDate URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 	responseCode, _, err := client.consumeResponse(req)
@@ -371,7 +381,7 @@ func (client DefaultClient) UpdateReleasedFlag(mappingID int, released bool) err
 	if err != nil {
 		return err
 	}
-	logger("jira.UpdateReleaseFlag URL %s\n", req.URL)
+	logger.Printf("jira.UpdateReleaseFlag URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 	responseCode, _, err := client.consumeResponse(req)
@@ -390,7 +400,7 @@ func (client DefaultClient) DeleteMapping(mappingID int) error {
 	if err != nil {
 		return err
 	}
-	logger("jira.DeleteMapping URL %s\n", req.URL)
+	logger.Printf("jira.DeleteMapping URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 	responseCode, _, err := client.consumeResponse(req)
