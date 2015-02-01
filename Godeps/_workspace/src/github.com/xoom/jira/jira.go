@@ -91,7 +91,19 @@ type (
 		Released       bool   `json:"released"`
 		ReleaseDateStr string `json:"releaseDateStr"`
 	}
+
+	nopLogger struct {
+		io.WriteCloser
+	}
 )
+
+func (n nopLogger) Write(p []byte) (int, error) {
+	return 0, nil
+}
+
+func (n nopLogger) Close() error {
+	return nil
+}
 
 func init() {
 	for _, v := range strings.Split(os.Getenv("GODEBUG"), ",") {
@@ -104,9 +116,7 @@ func init() {
 	if debug {
 		writeCloser = os.Stdout
 	} else {
-		if f, err := os.OpenFile(os.DevNull, os.O_WRONLY, os.FileMode(0666)); err == nil {
-			writeCloser = f
-		}
+		writeCloser = nopLogger{}
 	}
 	logger = log.New(writeCloser, "INFO ", log.Ldate|log.Ltime|log.Lshortfile)
 }
