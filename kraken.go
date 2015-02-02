@@ -114,6 +114,8 @@ func getOrCreateVersion(projectID, versionName string, versions map[string]jira.
 			return jira.Version{}, err
 		}
 		log.Printf("Created project version %s\n", version.Name)
+	} else {
+		log.Printf("Retrieved existing version %s\n", version.Name)
 	}
 	return version, nil
 }
@@ -131,6 +133,8 @@ func getOrCreateMapping(projectID, componentID, releaseVersionID string, mapping
 			return jira.Mapping{}, err
 		}
 		log.Printf("Created version mapping: %d\n", mapping.ID)
+	} else {
+		log.Printf("Retrieved existing version mapping: %d\n", mapping.ID)
 	}
 	return mapping, nil
 }
