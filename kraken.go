@@ -127,7 +127,6 @@ func getOrCreateMapping(projectID, componentID, releaseVersionID string, mapping
 
 	mapping, present = findMapping(mappings, projectID, componentID, releaseVersionID)
 	if !present {
-		// create the release-version mapping, set released, and release with today's date
 		mapping, err = client.CreateMapping(projectID, componentID, releaseVersionID)
 		if err != nil {
 			return jira.Mapping{}, err
