@@ -1,7 +1,7 @@
 
 NAME := kraken
 ARCH := amd64
-VERSION := 1.0
+VERSION := 1.1
 DATE := $(shell date)
 COMMIT_ID := $(shell git rev-parse --short HEAD)
 SDK_INFO := $(shell go version)
