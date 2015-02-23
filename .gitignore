@@ -2,3 +2,6 @@ kraken
 kraken-darwin-amd64
 kraken-linux-amd64
 kraken-windows-amd64.exe
+*.deb
+*.rpm
+
