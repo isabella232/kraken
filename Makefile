@@ -15,6 +15,7 @@ binaries: deps test
 	GOOS=windows GOARCH=$(ARCH) godep go build -ldflags $(LD_FLAGS) -o $(NAME)-windows-$(ARCH).exe
 
 test:
+	go fmt
 	godep go vet
 	godep go test -v
 
