@@ -16,8 +16,7 @@ import (
 	"time"
 )
 
-var debug bool
-var logger *log.Logger
+var logger = log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile)
 
 type (
 	Jira interface {
@@ -97,30 +96,6 @@ type (
 	}
 )
 
-func (n nopLogger) Write(p []byte) (int, error) {
-	return 0, nil
-}
-
-func (n nopLogger) Close() error {
-	return nil
-}
-
-func init() {
-	for _, v := range strings.Split(os.Getenv("GODEBUG"), ",") {
-		if v == "jira" {
-			debug = true
-			break
-		}
-	}
-	var writeCloser io.WriteCloser
-	if debug {
-		writeCloser = os.Stdout
-	} else {
-		writeCloser = nopLogger{}
-	}
-	logger = log.New(writeCloser, "INFO ", log.Ldate|log.Ltime|log.Lshortfile)
-}
-
 // NewClient returns a new default Jira client for the given Jira admin username/password and base REST URL.
 func NewClient(username, password string, baseURL *url.URL) Jira {
 	return DefaultClient{username: username, password: password, baseURL: baseURL, httpClient: &http.Client{Timeout: 10 * time.Second}}
@@ -132,7 +107,6 @@ func (client DefaultClient) GetProject(projectKey string) (Project, error) {
 	if err != nil {
 		return Project{}, err
 	}
-	logger.Printf("jira.GetComponents URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 
@@ -141,6 +115,7 @@ func (client DefaultClient) GetProject(projectKey string) (Project, error) {
 		return Project{}, err
 	}
 	if responseCode != http.StatusOK {
+		logger.Printf("JIRA response: %s\n", string(data))
 		return Project{}, fmt.Errorf("error getting project.  Status code: %d.\n", responseCode)
 	}
 
@@ -158,7 +133,6 @@ func (client DefaultClient) GetComponents(projectID string) (map[string]Componen
 	if err != nil {
 		return nil, err
 	}
-	logger.Printf("jira.GetComponents URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 
@@ -167,6 +141,7 @@ func (client DefaultClient) GetComponents(projectID string) (map[string]Componen
 		return nil, err
 	}
 	if responseCode != http.StatusOK {
+		logger.Printf("JIRA response: %s\n", string(data))
 		return nil, fmt.Errorf("error getting project components.  Status code: %d.\n", responseCode)
 	}
 
@@ -189,7 +164,6 @@ func (client DefaultClient) GetVersions(projectID string) (map[string]Version, e
 	if err != nil {
 		return nil, err
 	}
-	logger.Printf("jira.GetVersions URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 
@@ -198,6 +172,7 @@ func (client DefaultClient) GetVersions(projectID string) (map[string]Version, e
 		return nil, err
 	}
 	if responseCode != http.StatusOK {
+		logger.Printf("JIRA response: %s\n", string(data))
 		return nil, fmt.Errorf("error getting project versions.  Status code: %d.\n", responseCode)
 	}
 
@@ -226,7 +201,6 @@ func (client DefaultClient) CreateVersion(projectID, versionName string) (Versio
 		return Version{}, err
 	}
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/rest/api/2/version", client.baseURL), bytes.NewBuffer(data))
-	logger.Printf("jira.CreateVersion URL %s\n", req.URL)
 	if err != nil {
 		return Version{}, err
 	}
@@ -238,6 +212,7 @@ func (client DefaultClient) CreateVersion(projectID, versionName string) (Versio
 		return Version{}, err
 	}
 	if responseCode != http.StatusCreated {
+		logger.Printf("JIRA response: %s\n", string(data))
 		return Version{}, fmt.Errorf("error creating project version.  Status code: %d.\n", responseCode)
 	}
 
@@ -269,7 +244,6 @@ func (client DefaultClient) CreateMapping(projectID, componentID, versionID stri
 	}
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/rest/com.deniz.jira.mapping/latest/", client.baseURL), bytes.NewBuffer(data))
-	logger.Printf("jira.CreateMapping URL %s\n", req.URL)
 	if err != nil {
 		return Mapping{}, err
 	}
@@ -288,6 +262,7 @@ func (client DefaultClient) CreateMapping(projectID, componentID, versionID stri
 	}
 
 	if response.StatusCode != http.StatusCreated {
+		logger.Printf("JIRA response: %s\n", string(data))
 		return Mapping{}, fmt.Errorf("error creating mapped version.  Status code: %d.\n", response.StatusCode)
 	}
 
@@ -312,7 +287,6 @@ func (client DefaultClient) GetMappings() (map[int]Mapping, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Printf("jira.GetMappings URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 
@@ -321,6 +295,7 @@ func (client DefaultClient) GetMappings() (map[int]Mapping, error) {
 		return nil, err
 	}
 	if responseCode != http.StatusOK {
+		logger.Printf("JIRA response: %s\n", string(data))
 		return nil, fmt.Errorf("error getting mappings.  Status code: %d.\n", responseCode)
 	}
 
@@ -342,7 +317,6 @@ func (client DefaultClient) GetVersionsForComponent(projectID, componentID strin
 	if err != nil {
 		return nil, err
 	}
-	logger.Printf("jira.GetVersionsForComponent URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
 
@@ -351,6 +325,7 @@ func (client DefaultClient) GetVersionsForComponent(projectID, componentID strin
 		return nil, err
 	}
 	if responseCode != http.StatusOK {
+		logger.Printf("JIRA response: %s\n", string(data))
 		return nil, fmt.Errorf("error getting mappings.  Status code: %d.\n", responseCode)
 	}
 
@@ -372,14 +347,14 @@ func (client DefaultClient) UpdateReleaseDate(mappingID int, releaseDate string)
 	if err != nil {
 		return err
 	}
-	logger.Printf("jira.UpdateReleaseDate URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
-	responseCode, _, err := client.consumeResponse(req)
+	responseCode, data, err := client.consumeResponse(req)
 	if err != nil {
 		return err
 	}
 	if responseCode != http.StatusOK {
+		logger.Printf("JIRA response: %s\n", string(data))
 		return fmt.Errorf("error updating mapping release date.  Status code: %d.\n", responseCode)
 	}
 	return nil
@@ -391,14 +366,14 @@ func (client DefaultClient) UpdateReleasedFlag(mappingID int, released bool) err
 	if err != nil {
 		return err
 	}
-	logger.Printf("jira.UpdateReleaseFlag URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
-	responseCode, _, err := client.consumeResponse(req)
+	responseCode, data, err := client.consumeResponse(req)
 	if err != nil {
 		return err
 	}
 	if responseCode != http.StatusOK {
+		logger.Printf("JIRA response: %s\n", string(data))
 		return fmt.Errorf("error updating mapping is-released flag.  Status code: %d.\n", responseCode)
 	}
 	return nil
@@ -410,14 +385,14 @@ func (client DefaultClient) DeleteMapping(mappingID int) error {
 	if err != nil {
 		return err
 	}
-	logger.Printf("jira.DeleteMapping URL %s\n", req.URL)
 	req.Header.Set("Accept", "application/json")
 	req.SetBasicAuth(client.username, client.password)
-	responseCode, _, err := client.consumeResponse(req)
+	responseCode, data, err := client.consumeResponse(req)
 	if err != nil {
 		return err
 	}
 	if responseCode != http.StatusNoContent {
+		logger.Printf("JIRA response: %s\n", string(data))
 		return fmt.Errorf("error deleting mapping.  Status code: %d.\n", responseCode)
 	}
 	return nil

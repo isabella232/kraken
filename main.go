@@ -70,21 +70,21 @@ func main() {
 		Log.Printf("Error getting projects: %v\n", err)
 		os.Exit(-1)
 	}
-	Log.Printf("Retrieved project: %s\n", *projectKey)
+	Log.Printf("Found project: %s\n", *projectKey)
 
 	versions, err := jiraClient.GetVersions(project.ID)
 	if err != nil {
 		Log.Printf("Error getting project versions: %v\n", err)
 		os.Exit(-1)
 	}
-	Log.Printf("Retrieved %d project versions\n", len(versions))
+	Log.Printf("Found %d project versions\n", len(versions))
 
 	components, err := jiraClient.GetComponents(project.ID)
 	if err != nil {
 		Log.Printf("Error getting project components: %v\n", err)
 		os.Exit(-1)
 	}
-	Log.Printf("Retrieved %d project components\n", len(components))
+	Log.Printf("Found %d project components\n", len(components))
 
 	component, present := components[*componentName]
 	if !present {
@@ -165,7 +165,7 @@ func getOrCreateVersion(projectID, versionName string, versions map[string]jira.
 		}
 		Log.Printf("Created project version %s\n", version.Name)
 	} else {
-		Log.Printf("Retrieved existing version %s\n", version.Name)
+		Log.Printf("Retrieved existing version %s, no need to create it.\n", version.Name)
 	}
 	return version, nil
 }
@@ -183,7 +183,7 @@ func getOrCreateMapping(projectID, componentID, releaseVersionID string, mapping
 		}
 		Log.Printf("Created version mapping ID: %d\n", mapping.ID)
 	} else {
-		Log.Printf("Retrieved existing version mapping ID: %d\n", mapping.ID)
+		Log.Printf("Retrieved existing version mapping ID %d, no need to create it.\n", mapping.ID)
 	}
 	return mapping, nil
 }
