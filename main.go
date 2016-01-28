@@ -51,7 +51,11 @@ func main() {
 
 	*nextVersionName = nextVersion(*nextVersionName)
 
-	Log.Printf("Specified component: <%s>\n", *componentName)
+	if *jobName != "" {
+		Log.Printf("Derived component: <%s>\n", *componentName)
+	} else {
+		Log.Printf("Specified component: <%s>\n", *componentName)
+	}
 	Log.Printf("Specified release version: <%s>\n", *releaseVersionName)
 	if *nextVersionName != "" {
 		Log.Printf("Specified next version name: <%s>\n", *nextVersionName)
