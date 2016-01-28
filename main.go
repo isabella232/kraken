@@ -13,7 +13,6 @@ import (
 )
 
 var (
-	// required
 	baseURL            = flag.String("jira-base-url", "http://localhost:8080", "JIRA base REST URL.  Required.")
 	username           = flag.String("jira-username", "", "JIRA admin user.  Required.")
 	password           = flag.String("jira-password", "", "JIRA admin password.  Required.")
@@ -22,7 +21,6 @@ var (
 	componentName      = flag.String("component-name", "", "JIRA project component name.  For example, rest-server.  Required if stashkins-job-name is not provided.")
 	jobName            = flag.String("stashkins-job-name", "", "Stashkins job name.  For example, eng-abcd-release, which extracts abcd as a component name  Required if component-name is not provided.")
 
-	// optional
 	nextVersionName = flag.String("next-version-name", "", "JIRA next version name. For example, 1.2.  Optional.")
 	versionFlag     = flag.Bool("version", false, "Print version and exit.")
 
@@ -44,7 +42,7 @@ func main() {
 		for _, i := range err {
 			Log.Printf("Error: %+v\nExiting.", i)
 		}
-		os.Exit(0)
+		os.Exit(-1)
 	}
 
 	if *componentName == "" {
@@ -53,21 +51,39 @@ func main() {
 
 	*nextVersionName = nextVersion(*nextVersionName)
 
+	Log.Printf("Specified component: <%s>\n", *componentName)
+	Log.Printf("Specified release version: <%s>\n", *releaseVersionName)
+	if *nextVersionName != "" {
+		Log.Printf("Specified next version name: <%s>\n", *nextVersionName)
+	}
+
 	url, err := url.Parse(*baseURL)
-	check("Error parsing Jira base URL", err)
+	if err != nil {
+		Log.Printf("Error parsing Jira base URL: %v\n", err)
+		os.Exit(-1)
+	}
 
 	jiraClient := jira.NewClient(*username, *password, url)
 
 	project, err := jiraClient.GetProject(*projectKey)
-	check("Error getting projects", err)
+	if err != nil {
+		Log.Printf("Error getting projects: %v\n", err)
+		os.Exit(-1)
+	}
 	Log.Printf("Retrieved project: %s\n", *projectKey)
 
 	versions, err := jiraClient.GetVersions(project.ID)
-	check("Error getting project versions", err)
+	if err != nil {
+		Log.Printf("Error getting project versions: %v\n", err)
+		os.Exit(-1)
+	}
 	Log.Printf("Retrieved %d project versions\n", len(versions))
 
 	components, err := jiraClient.GetComponents(project.ID)
-	check("Error getting project components", err)
+	if err != nil {
+		Log.Printf("Error getting project components: %v\n", err)
+		os.Exit(-1)
+	}
 	Log.Printf("Retrieved %d project components\n", len(components))
 
 	component, present := components[*componentName]
@@ -78,24 +94,42 @@ func main() {
 
 	// get mappings for all projects
 	mappings, err := jiraClient.GetMappings()
-	check("Error getting mappings", err)
+	if err != nil {
+		Log.Printf("Error getting mappings: %v\n", err)
+		os.Exit(-1)
+	}
 
 	// fetch or create release-version
 	releaseVersion, err := getOrCreateVersion(project.ID, *releaseVersionName, versions, jiraClient)
-	check("Error getOrCreateVersion()", err)
+	if err != nil {
+		Log.Printf("Error getOrCreateVersion(): %v\n", err)
+		os.Exit(-1)
+	}
 
 	// Create the release-version mapping if it does not exist
 	releaseMapping, err := getOrCreateMapping(project.ID, component.ID, releaseVersion.ID, mappings, jiraClient)
-	check("Error getOrCreateMapping()", err)
+	if err != nil {
+		Log.Printf("Error getOrCreateMapping(): %v\n", err)
+		os.Exit(-1)
+	}
 
 	// Do not update a mapping that is already released.
 	if !releaseMapping.Released {
 		err = jiraClient.UpdateReleasedFlag(releaseMapping.ID, true)
-		check("Error updating release flag for release-version", err)
-		Log.Printf("Updated released flag for release mapping %+v\n", releaseMapping)
+		if err != nil {
+			Log.Printf("Error updating release flag for release-version: %v\n", err)
+		}
+
+		if err != nil {
+			Log.Printf("Error updating release flag for release-version: %v\n", err)
+			return
+		}
 
 		err = jiraClient.UpdateReleaseDate(releaseMapping.ID, today())
-		check("Error updating release date for release-version", err)
+		if err != nil {
+			Log.Printf("Error updating release data for release-version: %v\n", err)
+			return
+		}
 		Log.Printf("Updated release date for release mapping %+v\n", releaseMapping)
 	} else {
 		Log.Printf("Skipping already released release mapping: %+v\n", releaseMapping)
@@ -104,11 +138,17 @@ func main() {
 	// next-version
 	if *nextVersionName != "" {
 		nextVersion, err := getOrCreateVersion(project.ID, *nextVersionName, versions, jiraClient)
-		check("Error creating next-version", err)
+		if err != nil {
+			Log.Printf("Error creating next version: %v\n", err)
+			return
+		}
 
 		// Create the next-version mapping if it does not exist.
 		_, err = getOrCreateMapping(project.ID, component.ID, nextVersion.ID, mappings, jiraClient)
-		check("Error creating next-version mapping", err)
+		if err != nil {
+			Log.Printf("Error creating next-version mapping: %v\n", err)
+			return
+		}
 	}
 }
 
@@ -141,9 +181,9 @@ func getOrCreateMapping(projectID, componentID, releaseVersionID string, mapping
 		if err != nil {
 			return jira.Mapping{}, err
 		}
-		Log.Printf("Created version mapping: %d\n", mapping.ID)
+		Log.Printf("Created version mapping ID: %d\n", mapping.ID)
 	} else {
-		Log.Printf("Retrieved existing version mapping: %d\n", mapping.ID)
+		Log.Printf("Retrieved existing version mapping ID: %d\n", mapping.ID)
 	}
 	return mapping, nil
 }
@@ -163,13 +203,6 @@ func findMapping(mappings map[int]jira.Mapping, projectID, componentID, versionI
 func today() string {
 	t := time.Now()
 	return fmt.Sprintf("%d/%s/%d", t.Day(), t.Month().String()[:3], t.Year()%100)
-}
-
-func check(message string, err error) {
-	if err != nil {
-		Log.Printf("%s: %+v\nExiting.", message, err)
-		os.Exit(0)
-	}
 }
 
 // For inputs not ending in -SNAPSHOT, return the input.  For inputs ending -SNAPSHOT, remove that suffix and return the result.
