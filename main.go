@@ -19,7 +19,7 @@ var (
 	projectKey         = flag.String("project-key", "", "JIRA project key.  For example, PLAT.  Required.")
 	releaseVersionName = flag.String("release-version-name", "", "JIRA release version name. For example, 1.1.  Required.")
 	componentName      = flag.String("component-name", "", "JIRA project component name.  For example, rest-server.  Required if stashkins-job-name is not provided.")
-	jobName            = flag.String("stashkins-job-name", "", "Stashkins job name.  For example, eng-abcd-release, which extracts abcd as a component name  Required if component-name is not provided.")
+	jobName            = flag.String("stashkins-job-name", "", "Stashkins job name.  For example, eng-abcd-release, which extracts abcd as a component name.  Required if component-name is not provided.")
 
 	nextVersionName = flag.String("next-version-name", "", "JIRA next version name. For example, 1.2.  Optional.")
 	versionFlag     = flag.Bool("version", false, "Print version and exit.")
@@ -238,7 +238,7 @@ func validate() []error {
 		errors = append(errors, fmt.Errorf("only one of component-naem or stashkins-job-name may be provided"))
 	}
 	if *jobName == "" && *componentName == "" {
-		errors = append(errors, fmt.Errorf("one of component-naem or stashkins-job-name must be provided"))
+		errors = append(errors, fmt.Errorf("one of component-name or stashkins-job-name must be provided"))
 	}
 
 	return errors
