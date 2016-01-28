@@ -4,8 +4,8 @@ import "testing"
 
 func TestValidate(t *testing.T) {
 	errors := validate()
-	if len(errors) != 5 {
-		t.Fatalf("Want 5 but got %d\n", len(errors))
+	if len(errors) != 4 {
+		t.Fatalf("Want 4 but got %d\n", len(errors))
 	}
 
 	u := "foo"
@@ -13,7 +13,7 @@ func TestValidate(t *testing.T) {
 	nextVersionName = &u
 	releaseVersionName = &v
 	errors = validate()
-	if len(errors) != 5 {
-		t.Fatalf("Want 5 but got %d\n", len(errors))
+	if len(errors) != 4 {
+		t.Fatalf("Want 4 but got %d\n", len(errors))
 	}
 }

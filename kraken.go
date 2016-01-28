@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/xoom/jira"
@@ -18,7 +19,8 @@ var (
 	password           = flag.String("jira-password", "", "JIRA admin password.  Required.")
 	projectKey         = flag.String("project-key", "", "JIRA project key.  For example, PLAT.  Required.")
 	releaseVersionName = flag.String("release-version-name", "", "JIRA release version name. For example, 1.1.  Required.")
-	componentName      = flag.String("component-name", "", "JIRA project component name.  For example, rest-server.  Required.")
+	componentName      = flag.String("component-name", "", "JIRA project component name.  For example, rest-server.  Required if stashkins-job-name is not provided.")
+	jobName            = flag.String("stashkins-job-name", "", "Stashkins job name.  For example, eng-abcd-release.  Required if component-name is not provided.")
 
 	// optional
 	nextVersionName = flag.String("next-version-name", "", "JIRA next version name. For example, 1.2.  Optional.")
@@ -42,6 +44,17 @@ func main() {
 		}
 		os.Exit(0)
 	}
+
+	if *componentName == "" {
+		*componentName = componentNameFromJobname(*jobName)
+	}
+
+	*nextVersionName = nextVersion(*nextVersionName)
+
+	fmt.Println(*componentName)
+	fmt.Println(*nextVersionName)
+
+	os.Exit(0)
 
 	url, err := url.Parse(*baseURL)
 	check("Error parsing Jira base URL", err)
@@ -162,6 +175,21 @@ func check(message string, err error) {
 	}
 }
 
+// For inputs not ending in -SNAPSHOT, return the input.  For inputs ending -SNAPSHOT, remove that suffix and return the result.
+func nextVersion(version string) string {
+	if strings.HasSuffix(version, "-SNAPSHOT") {
+		return version[:strings.LastIndex(version, "-")]
+	}
+	return version
+}
+
+// Jobs are assumed to be of the form proj-component-release, where proj- and -release are discarded and component is returned.
+func componentNameFromJobname(jobName string) string {
+	firstDash := strings.Index(jobName, "-")
+	lastDash := strings.LastIndex(jobName, "-")
+	return jobName[firstDash+1 : lastDash]
+}
+
 func validate() []error {
 	errors := make([]error, 0)
 	if *baseURL == "" {
@@ -176,14 +204,14 @@ func validate() []error {
 	if *projectKey == "" {
 		errors = append(errors, fmt.Errorf("project-key must be provided"))
 	}
-	if *componentName == "" {
-		errors = append(errors, fmt.Errorf("component-name must be provided"))
-	}
 	if *releaseVersionName == "" {
 		errors = append(errors, fmt.Errorf("release-version-name must be provided"))
 	}
 	if *nextVersionName != "" && *releaseVersionName == *nextVersionName {
 		errors = append(errors, fmt.Errorf("release-version-name and next-version-name must be different"))
+	}
+	if *jobName != "" && *componentName != "" {
+		errors = append(errors, fmt.Errorf("only one of component-naem or stashkins-job-name may be provided"))
 	}
 	return errors
 }
